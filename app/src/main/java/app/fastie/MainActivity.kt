@@ -29,7 +29,7 @@ class MainActivity : Activity(), PosterHost {
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         edgeToEdge()
-        val root = FrameLayout(this).apply { setBackgroundColor(C.GROUND) }
+        val root = FrameLayout(this).apply { setBackgroundColor(C.ground) }
         pages = FrameLayout(this)
         root.addView(pages, FrameLayout.LayoutParams(-1, -1))
         val bar = if (isTv) rail() else bottomBar()
@@ -40,8 +40,8 @@ class MainActivity : Activity(), PosterHost {
             @Suppress("DEPRECATION")
             val bottom = insets.systemWindowInsetBottom
             if (!isTv) {
-                bar.setPadding(0, dp(6), 0, bottom + dp(6))
-                pages.setPadding(0, 0, 0, bottom + dp(62))
+                bar.setPadding(0, dp(6), 0, bottom + dp(10))
+                pages.setPadding(0, 0, 0, bottom + dp(80))
             }
             settings?.view?.setPadding(0, topInset, 0, 0)
             insets
@@ -70,62 +70,62 @@ class MainActivity : Activity(), PosterHost {
     private val icons = intArrayOf(R.drawable.ic_home, R.drawable.ic_search, R.drawable.ic_list, R.drawable.ic_settings)
     private val labels = arrayOf("Home", "Search", "My List", "Settings")
 
-    /** TV: a slim column of icons. Focus shows a white disc; the current page is amber. */
+    /** TV: a navigation rail. Phone: a navigation bar. Both use Expressive's pill indicator behind the icon. */
     private fun rail() = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         gravity = Gravity.CENTER_HORIZONTAL
         layoutParams = FrameLayout.LayoutParams(dp(RAIL), -1)
         setPadding(0, dp(28), 0, 0)
         background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
-            intArrayOf(0xF20F0F11.toInt(), 0x000F0F11))
-        addView(ImageView(context).apply { setImageResource(R.drawable.ic_bolt); setColorFilter(C.AMBER) }, lp(dp(28), dp(28)).apply { bottomMargin = dp(36) })
+            intArrayOf(C.alpha(C.ground, 0.95f), C.alpha(C.ground, 0f)))
+        addView(ImageView(context).apply { setImageResource(R.drawable.ic_bolt); setColorFilter(C.primary) }, lp(dp(28), dp(28)).apply { bottomMargin = dp(36) })
         // Search first, as on every big-screen streaming app.
-        for (i in intArrayOf(1, 0, 2, 3)) {
-            val item = ImageView(context).apply {
-                setImageResource(icons[i])
-                contentDescription = labels[i]
-                scaleType = ImageView.ScaleType.CENTER
-                isFocusable = true
-                isClickable = true
-                background = android.graphics.drawable.StateListDrawable().apply {
-                    addState(intArrayOf(android.R.attr.state_focused), rounded(Color.WHITE, dp(24).toFloat()))
-                    addState(intArrayOf(), rounded(Color.TRANSPARENT, 0f))
-                }
-                setOnFocusChangeListener { _, _ -> tint(this, i) }
-                setOnClickListener { show(i) }
-            }
-            nav += item.also { it.tag = i }
-            addView(item, lp(dp(48), dp(48)).apply { bottomMargin = dp(14) })
-        }
+        for (i in intArrayOf(1, 0, 2, 3)) addView(navItem(i), lp(dp(RAIL), -2).apply { bottomMargin = dp(12) })
     }
 
     private fun bottomBar() = LinearLayout(this).apply {
         layoutParams = FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM)
-        setBackgroundColor(0xF50F0F11.toInt())
-        for (i in 0..3) {
-            val item = text(T.META, s = labels[i]).apply {
-                setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
-                gravity = Gravity.CENTER
-                isClickable = true
-                setCompoundDrawablesRelativeWithIntrinsicBounds(null, icon(icons[i]), null, null)
-                compoundDrawablePadding = dp(4)
-                minHeight = dp(48)
-                setOnClickListener { show(i) }
-            }
-            nav += item.also { it.tag = i }
-            addView(item, LinearLayout.LayoutParams(0, -2, 1f))
-        }
+        setBackgroundColor(C.container)
+        for (i in 0..3) addView(navItem(i), LinearLayout.LayoutParams(0, -2, 1f))
+    }
+
+    private fun navItem(i: Int) = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        gravity = Gravity.CENTER_HORIZONTAL
+        isClickable = true
+        isFocusable = isTv
+        contentDescription = labels[i]
+        setPadding(0, dp(6), 0, dp(6))
+        val pill = FrameLayout(context).apply { background = rounded(android.graphics.Color.TRANSPARENT, dp(16).toFloat()) }
+        pill.addView(ImageView(context).apply { setImageResource(icons[i]) }, FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER))
+        addView(pill, lp(dp(56), dp(32)))
+        addView(text(T.META, s = labels[i]).apply { setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, if (isTv) 13f else 12f); setPadding(0, dp(4), 0, 0) }, lp(-2, -2))
+        setOnFocusChangeListener { v, _ -> tint(v, i) }
+        setOnClickListener { show(i) }
+        nav += this
+        tag = i
     }
 
     private fun tint(v: View, i: Int) {
-        val color = when {
-            v.isFocused -> C.ON_LIGHT
-            i == page -> C.AMBER
-            else -> C.MUTED
+        val item = v as LinearLayout
+        val pill = item.getChildAt(0) as FrameLayout
+        val icon = pill.getChildAt(0) as ImageView
+        val label = item.getChildAt(1) as TextView
+        val active = i == page
+        val (fill, ink) = when {
+            v.isFocused -> C.primary to C.onPrimary
+            active -> C.secondaryContainer to C.onSecondaryContainer
+            else -> android.graphics.Color.TRANSPARENT to C.variant
         }
-        when (v) {
-            is ImageView -> v.setColorFilter(color)
-            is TextView -> { v.setTextColor(color); v.compoundDrawablesRelative[1]?.setTint(color) }
+        val wasFilled = (pill.background as android.graphics.drawable.GradientDrawable).color?.defaultColor != android.graphics.Color.TRANSPARENT
+        (pill.background as android.graphics.drawable.GradientDrawable).setColor(fill)
+        icon.setColorFilter(ink)
+        label.setTextColor(if (active || v.isFocused) C.onSurface else C.variant)
+        label.typeface = android.graphics.Typeface.create("sans-serif-medium", if (active) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+        // The indicator grows out from the icon when it appears.
+        if (!wasFilled && fill != android.graphics.Color.TRANSPARENT) {
+            pill.scaleX = 0.55f
+            pill.animate().scaleX(1f).setInterpolator(SPRING).setDuration(SPRING.duration).start()
         }
     }
 
@@ -168,7 +168,7 @@ class MainActivity : Activity(), PosterHost {
     fun reloadHome() = home.reload()
 
     companion object {
-        const val RAIL = 76
+        const val RAIL = 88
     }
 }
 
@@ -185,9 +185,10 @@ fun openItem(a: Activity, item: Item, progress: Progress?) {
 
 @Suppress("DEPRECATION")
 fun Activity.edgeToEdge() {
+    window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(C.ground))
     window.statusBarColor = Color.TRANSPARENT
     // TV has no system bars; on phones the 3-button bar needs a ground behind it to stay readable over content.
-    window.navigationBarColor = if (isTv) Color.TRANSPARENT else 0xE60F0F11.toInt()
+    window.navigationBarColor = if (isTv) Color.TRANSPARENT else C.container
     window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
         View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
 }
@@ -201,9 +202,9 @@ class HomePage(private val a: MainActivity) {
     private val hero = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
     private val logo = ImageView(a).apply { scaleType = ImageView.ScaleType.FIT_START }
     private val title = a.text(T.DISPLAY, lines = 2)
-    private val meta = a.text(T.META, C.MUTED, lines = 1)
-    private val desc = a.text(T.BODY, 0xFFD6D6DA.toInt(), lines = 3)
-    private val status = a.text(T.BODY, C.MUTED)
+    private val meta = a.text(T.META, C.variant, lines = 1)
+    private val desc = a.text(T.BODY, C.variant, lines = 3)
+    private val status = a.text(T.BODY, C.variant)
     private val layers: Pair<ImageView, ImageView>
     private var catalogRows: List<Row> = emptyList()
     private var heroItem: Item? = null
@@ -249,7 +250,7 @@ class HomePage(private val a: MainActivity) {
         rows.adapter = adapter
         view.addView(status, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
         // Wordmark, phone only: the TV rail carries the bolt.
-        if (!tv) view.addView(a.text(T.TITLE, C.AMBER, s = "fastie").apply {
+        if (!tv) view.addView(a.text(T.TITLE, C.primary, s = "fastie").apply {
             letterSpacing = -0.02f; setShadowLayer(12f, 0f, 2f, 0x99000000.toInt())
             setOnApplyWindowInsetsListener { v, insets ->
                 @Suppress("DEPRECATION") (v.layoutParams as FrameLayout.LayoutParams).topMargin = insets.systemWindowInsetTop + a.dp(10)

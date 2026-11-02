@@ -32,7 +32,7 @@ class SignInActivity : Activity() {
             setPadding(side, dp(if (isTv) 56 else 72), side, dp(48))
         }
         col.addView(text(T.DISPLAY, s = "Sign in to Nuvio"))
-        col.addView(text(T.BODY, C.MUTED, s = "Your addons, My List and Continue Watching come with you. Fastie is an unofficial Nuvio client.")
+        col.addView(text(T.BODY, C.variant, s = "Your addons, My List and Continue Watching come with you. Fastie is an unofficial Nuvio client.")
             .apply { setPadding(0, dp(10), 0, dp(28)) })
 
         hint = text(T.BODY, s = "Getting a sign-in code…")
@@ -41,9 +41,11 @@ class SignInActivity : Activity() {
             typeface = Typeface.create("sans-serif", Typeface.BOLD)
             textSize = if (isTv) 56f else 44f
             letterSpacing = 0.08f
-            setPadding(0, dp(12), 0, dp(12))
+            setTextColor(C.onPrimaryContainer)
+            setPadding(dp(32), dp(16), dp(32), dp(16))
+            background = rounded(C.primaryContainer, dp(Shape.XL).toFloat())
         }
-        col.addView(code)
+        col.addView(code, lp(-2, -2).apply { topMargin = dp(16); bottomMargin = dp(16) })
         val buttons = LinearLayout(this)
         if (!isTv) buttons.addView(button("Open link", primary = true) {
             polling?.let { runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it.url))) } }
@@ -68,11 +70,11 @@ class SignInActivity : Activity() {
             }
         }, lp(-2, -2))
         col.addView(form)
-        status = text(T.BODY, C.MUTED).apply { setPadding(0, dp(20), 0, 0) }
+        status = text(T.BODY, C.variant).apply { setPadding(0, dp(20), 0, 0) }
         col.addView(status)
 
         setContentView(ScrollView(this).apply {
-            setBackgroundColor(C.GROUND)
+            setBackgroundColor(C.ground)
             addView(col, FrameLayout.LayoutParams(-1, -2))
         })
         startCode()
@@ -82,12 +84,12 @@ class SignInActivity : Activity() {
         hint = label
         inputType = type
         isSingleLine = true
-        setTextColor(C.TEXT)
-        setHintTextColor(C.MUTED)
-        setPadding(dp(16), dp(12), dp(16), dp(12))
+        setTextColor(C.onSurface)
+        setHintTextColor(C.variant)
+        setPadding(dp(20), dp(16), dp(20), dp(16))
         background = android.graphics.drawable.StateListDrawable().apply {
-            addState(intArrayOf(android.R.attr.state_focused), rounded(C.SURFACE, dp(6).toFloat(), dp(2), C.TEXT))
-            addState(intArrayOf(), rounded(C.SURFACE, dp(6).toFloat()))
+            addState(intArrayOf(android.R.attr.state_focused), rounded(C.containerHigh, dp(Shape.L).toFloat(), dp(2), C.primary))
+            addState(intArrayOf(), rounded(C.containerHigh, dp(Shape.L).toFloat()))
         }
         gravity = Gravity.CENTER_VERTICAL
     }

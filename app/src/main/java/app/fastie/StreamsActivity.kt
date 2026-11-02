@@ -26,20 +26,20 @@ class StreamsActivity : Activity() {
         val season = intent.getIntExtra("season", -1)
         val episode = intent.getIntExtra("episode", -1)
 
-        val root = FrameLayout(this).apply { setBackgroundColor(C.GROUND) }
+        val root = FrameLayout(this).apply { setBackgroundColor(C.ground) }
         val layers = backdrop(root, if (isTv) 0.8f else 0.4f)
         crossfade(layers, item.backgroundOrHub, resources.displayMetrics.widthPixels)
         // Dim the art further: this screen is for reading.
-        root.addView(View(this).apply { setBackgroundColor(0xB30F0F11.toInt()) }, FrameLayout.LayoutParams(-1, -1))
+        root.addView(View(this).apply { setBackgroundColor(C.alpha(C.ground, 0.7f)) }, FrameLayout.LayoutParams(-1, -1))
         val side = dp(if (isTv) 56 else 16)
         col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(side, dp(if (isTv) 40 else 56), side, dp(48)) }
         col.addView(text(T.DISPLAY, lines = 2, s = item.name.ifBlank { "Streams" }))
         if (season >= 0) {
             val ep = intent.getStringExtra("episodeTitle")?.takeIf { it.isNotBlank() }
-            col.addView(text(T.META, C.MUTED, s = listOfNotNull("Season $season, Episode $episode", ep).joinToString("  ·  "))
+            col.addView(text(T.META, C.variant, s = listOfNotNull("Season $season, Episode $episode", ep).joinToString("  ·  "))
                 .apply { setPadding(0, dp(8), 0, 0) })
         }
-        status = text(T.BODY, C.MUTED, s = "Asking your addons for streams…").apply { setPadding(0, dp(28), 0, 0) }
+        status = text(T.BODY, C.variant, s = "Asking your addons for streams…").apply { setPadding(0, dp(28), 0, 0) }
         col.addView(status)
         root.addView(ScrollView(this).apply {
             addView(col, FrameLayout.LayoutParams(if (isTv) dp(720) else -1, -2))
@@ -62,6 +62,7 @@ class StreamsActivity : Activity() {
                     if (first == null) first = row
                 }
             }
+            groupRows(col)
             first?.requestFocus()
         }
     }

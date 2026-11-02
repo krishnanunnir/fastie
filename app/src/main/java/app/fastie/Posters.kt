@@ -1,11 +1,9 @@
 package app.fastie
 
 import android.content.Context
-import android.graphics.Outline
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewOutlineProvider
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -23,7 +21,7 @@ interface PosterHost {
     fun open(item: Item, progress: Progress?)
 }
 
-class PosterHolder(val card: FrameLayout, val image: ImageView, val title: TextView, val bar: View, val track: View) :
+class PosterHolder(val card: FrameLayout, val image: ImageView, val title: TextView, val bar: GapProgress, val scrim: View) :
     RecyclerView.ViewHolder(card) {
     val ring: View.OnFocusChangeListener = card.onFocusChangeListener
 }
@@ -41,29 +39,32 @@ class PosterAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, type: Int): PosterHolder {
         val ctx = parent.context
         val w = ctx.posterWidth()
-        val r = ctx.dp(6).toFloat()
+        val r = ctx.dp(Shape.L).toFloat()
+        val shape = MorphOutline(r)
         val card = FrameLayout(ctx).apply {
-            background = rounded(C.SURFACE, r)
-            outlineProvider = object : ViewOutlineProvider() {
-                override fun getOutline(v: View, o: Outline) = o.setRoundRect(0, 0, v.width, v.height, r)
-            }
+            background = rounded(C.container, r)
+            outlineProvider = shape
             clipToOutline = true
-            focusRing(r)
+            focusMorph(shape, r, ctx.dp(Shape.XL).toFloat())
             isClickable = true
         }
-        val title = ctx.text(T.LABEL, C.MUTED, lines = 3).apply { gravity = Gravity.CENTER; setPadding(ctx.dp(8), 0, ctx.dp(8), 0) }
+        val title = ctx.text(T.LABEL, C.variant, lines = 3).apply { gravity = Gravity.CENTER; setPadding(ctx.dp(8), 0, ctx.dp(8), 0) }
         card.addView(title, FrameLayout.LayoutParams(-1, -2, Gravity.CENTER))
         val image = ImageView(ctx).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
         card.addView(image, FrameLayout.LayoutParams(-1, -1))
-        val inset = ctx.dp(8)
-        val track = View(ctx).apply { background = rounded(0x4DFFFFFF, ctx.dp(2).toFloat()) }
-        card.addView(track, FrameLayout.LayoutParams(-1, ctx.dp(4), Gravity.BOTTOM).apply { setMargins(inset, 0, inset, inset) })
-        val bar = View(ctx).apply { background = rounded(C.AMBER, ctx.dp(2).toFloat()) }
-        card.addView(bar, FrameLayout.LayoutParams(0, ctx.dp(4), Gravity.BOTTOM or Gravity.START).apply { setMargins(inset, 0, 0, inset) })
+        // Progress sits on a short surface scrim so its track reads over any poster.
+        val scrim = View(ctx).apply {
+            background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.BOTTOM_TOP,
+                intArrayOf(C.alpha(C.ground, 0.85f), C.alpha(C.ground, 0f)))
+        }
+        card.addView(scrim, FrameLayout.LayoutParams(-1, ctx.dp(40), Gravity.BOTTOM))
+        val inset = ctx.dp(12)
+        val bar = GapProgress(ctx)
+        card.addView(bar, FrameLayout.LayoutParams(-1, ctx.dp(4), Gravity.BOTTOM).apply { setMargins(inset, 0, inset, inset) })
         val m = ctx.dp(if (ctx.isTv) 7 else 4)
         card.layoutParams = if (fill) ViewGroup.MarginLayoutParams(-1, (w * 1.5f).toInt()).apply { setMargins(m, m, m, m) }
         else RecyclerView.LayoutParams(w, (w * 1.5f).toInt()).apply { setMargins(m, m * 2, m, m * 2) }
-        return PosterHolder(card, image, title, bar, track)
+        return PosterHolder(card, image, title, bar, scrim)
     }
 
     override fun onBindViewHolder(h: PosterHolder, pos: Int) {
@@ -72,11 +73,9 @@ class PosterAdapter(
         h.title.text = item.name
         h.card.contentDescription = item.name
         Images.load(h.image, item.posterOrHub, h.card.context.posterWidth())
-        h.track.visibility = if (p != null) View.VISIBLE else View.GONE
-        h.bar.visibility = h.track.visibility
-        if (p != null) h.card.post {
-            h.bar.layoutParams = h.bar.layoutParams.apply { width = ((h.card.width - h.card.context.dp(16)) * p.fraction.coerceIn(0.04f, 1f)).toInt() }
-        }
+        h.bar.visibility = if (p != null) View.VISIBLE else View.GONE
+        h.scrim.visibility = h.bar.visibility
+        if (p != null) h.bar.fraction = p.fraction.coerceAtLeast(0.04f)
         h.card.setOnClickListener { host.open(item, p) }
         h.card.setOnFocusChangeListener { v, has ->
             h.ring.onFocusChange(v, has)

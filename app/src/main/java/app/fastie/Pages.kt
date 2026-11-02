@@ -22,7 +22,7 @@ private fun MainActivity.side() = dp(if (isTv) 40 else 16)
 class SearchPage(private val a: MainActivity) {
     val view = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
     private val field = EditText(a)
-    private val status = a.text(T.BODY, C.MUTED)
+    private val status = a.text(T.BODY, C.variant)
     private val adapter = RowsAdapter(object : PosterHost {
         override fun open(item: Item, progress: Progress?) = openItem(a, item, null)
     })
@@ -33,17 +33,18 @@ class SearchPage(private val a: MainActivity) {
         val top = LinearLayout(a).apply { gravity = Gravity.CENTER_VERTICAL }
         field.apply {
             hint = "Search movies and series"
-            setHintTextColor(C.MUTED)
-            setTextColor(C.TEXT)
+            setHintTextColor(C.variant)
+            setTextColor(C.onSurface)
             textSize = if (a.isTv) 20f else 17f
             isSingleLine = true
             imeOptions = EditorInfo.IME_ACTION_SEARCH
-            setPadding(a.dp(18), a.dp(12), a.dp(18), a.dp(12))
+            setPadding(a.dp(24), a.dp(16), a.dp(24), a.dp(16))
             background = android.graphics.drawable.StateListDrawable().apply {
-                addState(intArrayOf(android.R.attr.state_focused), rounded(C.SURFACE, a.dp(6).toFloat(), a.dp(2), C.TEXT))
-                addState(intArrayOf(), rounded(C.SURFACE, a.dp(6).toFloat()))
+                // Material search bar: a full pill in the high container color.
+                addState(intArrayOf(android.R.attr.state_focused), rounded(C.containerHigh, a.dp(Shape.FULL).toFloat(), a.dp(2), C.primary))
+                addState(intArrayOf(), rounded(C.containerHigh, a.dp(Shape.FULL).toFloat()))
             }
-            setCompoundDrawablesRelativeWithIntrinsicBounds(a.icon(R.drawable.ic_search).apply { setTint(C.MUTED) }, null, null, null)
+            setCompoundDrawablesRelativeWithIntrinsicBounds(a.icon(R.drawable.ic_search).apply { setTint(C.variant) }, null, null, null)
             compoundDrawablePadding = a.dp(12)
             addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, af: Int) {}
@@ -115,7 +116,7 @@ class SearchPage(private val a: MainActivity) {
 class LibraryPage(private val a: MainActivity) {
     val view = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
     private val grid = RecyclerView(a)
-    private val empty = a.text(T.BODY, C.MUTED, s = "Titles you add to My List show up here.")
+    private val empty = a.text(T.BODY, C.variant, s = "Titles you add to My List show up here.")
     private val host = object : PosterHost { override fun open(item: Item, progress: Progress?) = openItem(a, item, null) }
 
     init {
@@ -195,6 +196,7 @@ class SettingsPage(private val a: MainActivity) {
         row("Fastie ${a.packageManager.getPackageInfo(a.packageName, 0).versionName}",
             "Plays what your addons provide. Fastie hosts no content and isn't affiliated with Nuvio or Stremio.")
 
+        groupRows(col)
         if (keep >= 0) col.getChildAt(keep.coerceAtMost(col.childCount - 1))?.requestFocus()
     }
 
@@ -237,9 +239,10 @@ class SettingsPage(private val a: MainActivity) {
 fun MainActivity.say(message: String) {
     val root = window.decorView as FrameLayout
     root.findViewWithTag<View>("snack")?.let(root::removeView)
-    val bar = text(T.LABEL, C.ON_LIGHT, lines = 2, s = message).apply {
+    val bar = text(T.LABEL, C.onPrimary, lines = 2, s = message).apply {
         tag = "snack"
-        background = rounded(0xFFF2F2F4.toInt(), dp(6).toFloat())
+        background = rounded(C.inverse, dp(Shape.L).toFloat())
+        setTextColor(C.inverseOn)
         setPadding(dp(18), dp(14), dp(18), dp(14))
         elevation = dp(6).toFloat()
     }
