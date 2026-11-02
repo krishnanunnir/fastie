@@ -1,35 +1,35 @@
 ---
 name: Fastie
-description: A few-megabyte Stremio/Nuvio client that plays the Netflix TV canon straight on a near-black living-room ground.
+description: A few-megabyte Stremio/Nuvio client in the Spotlight style, with a true-black ground, the focused title's art filling the screen, and white as the cursor.
 colors:
-  ground: "#0F0F11"
-  surface: "#1C1C21"
-  raised: "#2B2B31"
+  ground: "#08080A"
+  container: "#17171A"
+  container-high: "#222226"
+  container-highest: "#2E2E33"
   text: "#FFFFFF"
-  synopsis: "#D6D6DA"
-  muted: "#A3A3A8"
-  muted-on-light: "#4A4A52"
-  hairline: "#3A3A42"
-  snack: "#F2F2F4"
+  variant: "#A3A3AB"
+  outline-variant: "#3A3A42"
+  secondary-container: "#FFFFFF2E"
+  inverse: "#F2F2F4"
   amber: "#FFB627"
 typography:
   display:
     fontFamily: "sans-serif (Roboto, platform default)"
-    fontSize: "30sp phone / 34sp TV"
+    fontSize: "34sp phone / 40sp TV (44sp as the TV hero's fallback title)"
     fontWeight: 700
     lineHeight: 1.1
   title:
-    fontFamily: "sans-serif (Roboto, platform default)"
-    fontSize: "20sp phone / 22sp TV"
+    fontFamily: "sans-serif (Roboto)"
+    fontSize: "22sp phone / 24sp TV"
     fontWeight: 700
     lineHeight: 1.1
   row:
-    fontFamily: "sans-serif (Roboto, platform default)"
-    fontSize: "16sp phone / 19sp TV"
-    fontWeight: 700
+    fontFamily: "sans-serif-medium (Roboto Medium)"
+    fontSize: "17sp phone / 19sp TV"
+    fontWeight: 500
     lineHeight: 1.1
   body:
-    fontFamily: "sans-serif (Roboto, platform default)"
+    fontFamily: "sans-serif (Roboto)"
     fontSize: "14sp phone / 18sp TV"
     fontWeight: 400
     lineHeight: 1.25
@@ -44,224 +44,156 @@ typography:
     fontWeight: 700
     lineHeight: 1.1
 rounded:
-  thumb: "4dp"
-  card: "6dp"
-  episode: "8dp"
-  pill: "20dp"
-  disc: "24dp"
+  button: "6dp (Shape.S): buttons, list rows, inputs, snackbar"
+  card: "8dp (Shape.M): cards, thumbnails, episode rows"
+  ring: "12dp (card radius plus the 4dp gap)"
+  hero-poster: "14dp"
+  tab: "20dp (Shape.PILL): chips, TV tabs"
 spacing:
-  xs: "4dp"
-  sm: "8dp"
-  md: "12dp"
-  lg: "16dp"
-  xl: "28dp"
-  page-tv: "40dp"
+  page-tv: "48dp"
   page-phone: "16dp"
-  rail: "76dp"
-  poster-tv: "118dp"
+  tabs-tv: "64dp"
+  card-gap-tv: "12dp"
+  card-gap-phone: "8dp"
+  poster-tv: "100dp (150dp tall; 267dp wide when focused)"
   poster-phone: "108dp"
+  continue-tv: "200x112dp"
+  continue-phone: "220x124dp"
 components:
   button:
-    backgroundColor: "{colors.raised}"
+    backgroundColor: "{colors.secondary-container}"
     textColor: "{colors.text}"
     typography: "{typography.label}"
-    rounded: "{rounded.card}"
-    padding: "10dp 22dp 10dp 18dp"
-    height: "44dp TV / 48dp phone (min)"
-  button-focused:
-    backgroundColor: "{colors.text}"
-    textColor: "{colors.ground}"
+    rounded: "{rounded.button}"
+    height: "48dp min"
   button-primary-phone:
     backgroundColor: "{colors.text}"
     textColor: "{colors.ground}"
-    rounded: "{rounded.card}"
-  list-row:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text}"
-    typography: "{typography.label}"
-    rounded: "{rounded.card}"
-    padding: "14dp 18dp"
-  list-row-focused:
-    backgroundColor: "{colors.text}"
-    textColor: "{colors.ground}"
-  chip-season:
-    backgroundColor: "transparent"
-    textColor: "{colors.muted}"
-    typography: "{typography.label}"
-    rounded: "{rounded.pill}"
-    padding: "8dp 16dp"
-    height: "40dp TV / 44dp phone (min)"
-  chip-season-selected:
-    backgroundColor: "{colors.raised}"
-    textColor: "{colors.text}"
-  chip-season-focused:
+  button-focused:
     backgroundColor: "{colors.text}"
     textColor: "{colors.ground}"
   poster-card:
-    backgroundColor: "{colors.surface}"
+    backgroundColor: "{colors.container}"
     rounded: "{rounded.card}"
     width: "{spacing.poster-tv}"
-  episode-row:
-    backgroundColor: "transparent"
-    rounded: "{rounded.episode}"
-    padding: "8dp 12dp 8dp 8dp"
-  episode-row-focused:
-    backgroundColor: "{colors.raised}"
-  input-field:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text}"
+  poster-card-focused-tv:
+    width: "267dp (16:9)"
+    outline: "2dp white ring, 4dp outside the art"
+  continue-card:
     rounded: "{rounded.card}"
-    padding: "12dp 18dp"
-  rail-item-focused:
+    progress: "4dp, white 30% track, amber fill"
+  tab-tv:
+    textColor: "white at 62%"
+    typography: "16sp Roboto Medium"
+  tab-tv-current:
+    textColor: "{colors.text}"
+    underline: "2dp {colors.amber}"
+  tab-tv-focused:
     backgroundColor: "{colors.text}"
     textColor: "{colors.ground}"
-    rounded: "{rounded.disc}"
-    size: "48dp"
+    rounded: "{rounded.tab}"
   snackbar:
-    backgroundColor: "{colors.snack}"
+    backgroundColor: "{colors.inverse}"
     textColor: "{colors.ground}"
-    typography: "{typography.label}"
-    rounded: "{rounded.card}"
-    padding: "14dp 18dp"
 ---
 
 # Design System: Fastie
 
 ## Overview
 
-**Creative North Star: "The Living-Room Marquee"**
+**Creative North Star: "Spotlight"**
 
-The poster you're on is the whole screen. Fastie plays the streaming-category canon straight, with Netflix's TV app as the bar: a near-black ground, the focused title's backdrop filling the top of the screen behind left and bottom scrims, and horizontal rows of 2:3 posters below. Chrome recedes; artwork, title logos and white type carry everything. The only colour the app owns is one amber, and it is spent sparingly.
+The title you're on gets the whole screen. On TV the focused title's backdrop fills all of it, its logo, meta and synopsis sit top-left, and the rows sit in the darkened lower half. The focused poster widens from 2:3 into a 16:9 card that shows its own backdrop, so the cursor is the brightest and largest thing on screen. On phone the first title is a large floating card on a glow tinted from its art, and the hero scrolls away with the rows.
 
-The system is built from platform Android Views and a handful of `GradientDrawable`s: no Material Components, no Compose, no custom fonts. Lightness is a visual constraint as much as an engineering one. Every surface is a flat tonal step on the ground, every state is a drawable swap, and the only motion is a 150ms focus scale and a 400ms backdrop crossfade. The same code renders TV (D-pad, read from 3 m) and phone (touch), with deliberate differences in navigation, hero behaviour and type size.
+The user chose this direction on 2026-11-03 from three home mockups (`mockups/home.html`, option C), replacing both the Netflix-style "Marquee" system and the Material You "Tonal" work in progress. Brand commitments from PRODUCT.md still hold: a dark living-room ground, horizontal poster rows, no Netflix red or marks.
 
-Rejected by the brief and absent from the build: the grid-of-cards dashboard, the settings-heavy "media center" look, and Netflix's red or marks.
+The system is still built from platform Views and `GradientDrawable`s, with no Material Components, no Compose and no font downloads. Light is a feature.
 
-**Key Characteristics:**
-- Near-black ground (#0F0F11) with three flat tonal steps; no decorative shadows.
-- Backdrop-led hero with left-to-right and bottom-up ground-coloured scrims.
-- Two deliberate focus styles: imagery lifts and outlines, text controls invert to solid white.
-- One accent, amber, reserved for progress, the bolt/wordmark and the active nav item.
-- System sans (Roboto) in a six-step scale with separate phone and TV sizes.
-- Platform Views only; Material Design Icons vector paths for every glyph.
+**Key characteristics:**
+- True-black ground (#08080A) with flat tonal containers. Depth comes from scrims, not shadows (the phone hero card's elevation is the one exception).
+- White is the cursor: focused controls invert to white with ground ink, and focused imagery gets a 2dp white ring with a 4dp gap.
+- One accent, amber, for progress, the wordmark and the current page.
+- TV navigation is a row of text tabs along the top. There is no rail, so the rows get the full width.
 
 ## Colors
 
-A cool near-black ladder with white type and a single warm amber that means "you are here" or "how far you got".
+- **Ground** (#08080A): every screen, the scrims, the phone bottom bar at 96%, and the ink on any white control.
+- **Container ladder** (#17171A, #222226, #2E2E33): resting list rows, inputs and placeholder art.
+- **White** (#FFFFFF): primary type and the focus colour. The code's `C.primary`, `C.primaryContainer` and `C.onSurface` all resolve to it.
+- **Variant** (#A3A3AB): secondary text and inactive phone nav. Meta over art uses white at 72%, the TV synopsis white at 82%, and inactive TV tabs white at 62%.
+- **White 18%** (`C.secondaryContainer`): resting buttons and selected chips. It works over both art and ground.
+- **Amber** (#FFB627): `C.amber`. See the rule below.
 
-### Primary
-- **Fastie Amber** (amber): the only accent. Used on exactly three things: progress bars (poster cards and episode thumbnails), the bolt mark and "fastie" wordmark (TV rail bolt, phone home wordmark, launcher icon, TV banner), and the active navigation item (rail icon, bottom-bar icon and label).
+**The Amber Budget Rule.** Amber marks progress (cards, episode thumbnails, the player scrubber), the wordmark (bolt and "fastie"), and the current page (the TV tab's underline, the phone bar's icon and label). Nothing else, including focus, buttons, ratings and headings.
 
-### Neutral
-- **Living-Room Ground** (ground): every screen background, the scrim gradients, the bottom bar (at 96% opacity) and the text/icon colour on any white focused control.
-- **Card Surface** (surface): resting list rows, input fields, poster placeholders behind loading art, episode thumbnail placeholders.
-- **Raised Grey** (raised): resting buttons, pressed list rows, the selected season chip, the focused episode row fill.
-- **Screen White** (text): primary type, and the focus colour itself (button/row/chip/rail fill, poster outline, input stroke).
-- **Synopsis Grey** (synopsis): hero and details synopsis only, a half-step softer than white for long body copy over imagery.
-- **Netflix Grey** (muted): meta lines, secondary text, placeholder titles, inactive nav items, resting chip labels, hints.
-- **Muted On Light** (muted-on-light): a list row's subtitle when the row is focused (white fill).
-- **Hairline** (hairline): the 1dp outline of an unselected season chip, the only resting border in the system.
-- **Snack White** (snack): the transient snackbar, the one light surface.
+**The White Means Focus Rule.** On TV, a solid white surface means focus. The phone's single primary action (Play) is the only exception.
 
-### Named Rules
-**The Amber Budget Rule.** Amber marks progress, the brand mark, and the current nav item. Nothing else: not buttons, not focus, not links, not headings. If a new element wants amber, it does not get it.
-
-**The White Means Focus Rule.** On TV, solid white surfaces exist only under focus (the phone's single primary action is the stated exception). White is the cursor.
+Dynamic colour (Material You) was removed: the palette is fixed so the brand looks the same on every TV box.
 
 ## Typography
 
-**Display Font:** sans-serif (Roboto, platform default)
-**Body Font:** sans-serif (Roboto)
-**Label/Mono Font:** sans-serif-medium (Roboto Medium)
+System Roboto, in weight steps. Every style has a phone size and a TV size (`T` in Ui.kt), and the TV size is the legibility floor.
 
-**Character:** The platform face, played straight; weight steps (bold, medium, regular) do the hierarchy work so nothing is downloaded and everything matches the TV's own UI.
-
-### Hierarchy
-- **Display** (700, 30sp phone / 34sp TV, 1.1): fallback title when no logo art loads; page titles (My List, Settings, Streams, Sign in).
-- **Title** (700, 20sp / 22sp, 1.1): the phone "fastie" wordmark.
-- **Row** (700, 16sp / 19sp, 1.1): poster-row headings and stream-group section titles.
-- **Body** (400, 14sp / 18sp, 1.25): synopses (max 3 lines on home, 4 TV / 8 phone on details), status and empty-state copy.
-- **Meta** (500, 13sp / 16sp, 1.1): year · genres · runtime · IMDb rating lines, list-row subtitles, episode synopses.
-- **Label** (700 medium, 14sp / 16sp, 1.1): buttons, list-row titles, chips, episode titles, snackbar, poster placeholder titles.
-
-### Named Rules
-**The Two-Scale Rule.** Every style has a phone size and a TV size; never set a size without its TV twin. TV sizes are larger because the screen is read from 3 m.
-
-**The Logo-First Title Rule.** The hero and details title is the title's own logo art when available (TV 30% width, phone ~60%); Display text is the fallback, never both.
+- **Display**: the fallback title when a title has no logo art (44sp in the TV hero).
+- **Row**: row headings, in Roboto Medium at white 90%. They are quieter than the art they introduce.
+- **Meta**: a white star icon (`ic_star`) and the rating in bold white, then year · genres · runtime. The rating comes first.
+- **Logo first**: the hero shows the title's logo art (trimmed of transparent margins and sized to its own aspect, up to 36% of the screen width × 104dp on TV, or 72% of the card width × 68dp on phone). Display text is only the fallback.
 
 ## Layout
 
-**TV (1920x1080).** A fixed 76dp rail on the left: bolt mark, then Search, Home, My List, Settings as 48dp icon targets, over a ground gradient fading right. The home hero is fixed: the backdrop spans 74% of screen height, the hero column (logo, meta, 3-line synopsis) sits 9% from the top at 42% width, and rows start at 50% height. The hero follows focus: it updates after the user pauses 220ms on a poster, and the backdrop crossfades. The focused row snaps to the top of the row list instead of scrolling the minimum. Posters are 118dp wide (about 6.5 across beside the rail) with 7dp margins. Page side margins are 40dp (home pages), 56dp (details, streams), 72dp (sign-in); settings and streams columns cap at 640dp and 720dp.
+**TV (960×540dp).**
+- **Tabs:** a 64dp bar at 48dp from the left edge, holding the wordmark, then a Search icon, Home, My List and Settings.
+- **Hero:** the backdrop is full-screen, under a bottom-up scrim (the lower 80%), a left-to-right scrim (70% of the width) and a top scrim (22%) behind the tabs. The hero text starts 92dp down and is 46% of the screen wide; the synopsis is capped at 2 lines.
+- **Rows:** start at 55% of the height. The focused row snaps to the top of the row list, and within a row the focused card slides to the row's start while it widens. Cards that have scrolled past the start are clipped, so the focused card always comes first.
+- **Other pages:** start below the tab bar.
 
-**Phone (1080x2280).** A bottom bar of four icon-over-label items (12sp), ground at 96% opacity, padded for the system nav bar. The home hero is static on the first catalog item, 66% of screen height, and scrolls away with the rows as their first item; it carries Play and My List buttons side by side at equal width. The amber "fastie" wordmark sits top-left under the status bar. Posters are 108dp (about 3.3 across) with 4dp margins. Side margins are 16dp. Everything draws edge to edge under transparent system bars.
+**Phone.**
+- **Top:** the wordmark and a Search button sit under the status bar.
+- **Hero card:** 78% of the width (at most 340dp) and 1.42 times as tall as it is wide. It uses the title's backdrop, cropped to portrait, because posters print their own title and that would clash with the logo. Logo, meta, Play and My List sit centred at its foot.
+- **Glow:** a radial glow behind the card takes its hue from the art's average colour, capped at 55% saturation and 32% value.
+- **Rest of the screen:** a status-bar scrim fades in over rows as they scroll under it, and the bottom bar shows icons over labels.
 
-**Rhythm.** A 4dp base: 4, 8, 12, 16, 28dp recur (row title top 14dp, section title 28dp above / 12dp below, list gaps 8dp, button gaps 10-12dp).
+## Motion
 
-### Named Rules
-**The Focus-Follows Hero Rule.** On TV the hero belongs to whatever is focused; on phone it belongs to the first title and leaves when you scroll. Don't give the phone a focus-following hero or the TV a scrolling one.
-
-## Elevation & Depth
-
-Flat tonal layering. Depth comes from the ground ladder (ground, surface, raised), from ground-coloured scrims over backdrops (left-to-right from solid to clear across 70% of TV width; bottom-up across the lower 55% of the backdrop), and from a scroll dim on details that fades a ground layer to 92% over the backdrop while a status-bar scrim follows it. The one true shadow is platform elevation on the snackbar (6dp). Focused posters gain 8 translationZ alongside their scale.
-
-### Named Rules
-**The Scrim Not Shadow Rule.** Type over imagery is made readable by ground-coloured gradients, never by text boxes or drop shadows. (The phone wordmark's soft 12px text shadow is the single exception, there to hold amber over a bright backdrop.)
-
-## Shapes
-
-Gently rounded rectangles throughout: 6dp on posters, buttons, list rows, inputs and the snackbar; 8dp on episode rows; 4dp on episode thumbnails; 20dp pills for season chips; a 24dp disc for the focused rail icon. Imagery is clipped to its outline. No borders at rest, except the unselected season chip's 1dp hairline. Progress tracks are 4dp tall (3dp on episode thumbs) with 2dp rounded ends.
+There are three motions:
+- Focusing a TV poster runs one 260ms animator (ease 0.2, 0.8, 0.2, 1) that widens the card to 16:9, fades in its backdrop face, and slides the row so the card leads.
+- The hero backdrop crossfades over 400ms once the user has rested on a title for 220ms.
+- Grid posters in My List scale to 1.06 on focus.
 
 ## Components
 
-Two focus styles carry the whole system, chosen by what the element is.
+- **Poster card:** 8dp corners, art clipped to its outline, and the title as fallback text while art loads. On TV, a 4dp padding around the art holds the focus ring.
+- **Continue Watching card:** a 16:9 backdrop still under a black scrim. It shows the name (Label), "S1 · E4 · 31 min left" (Meta at 75% white), and a 4dp progress line (4% minimum fill). Selecting it goes straight to streams.
+- **Buttons:** 6dp corners, 48dp minimum height. They rest on white at 18% (Play on the phone rests white) and invert to white when focused or pressed.
+- **Tabs (TV):** text at 62% white, white with an amber underline on the current page, and a white pill with ground ink when focused. Only the current page's tab can take focus from outside the bar, so pressing ↑ lands on it.
 
-**The Imagery Focus Rule.** Posters lift: a 1.08 scale over 150ms plus a 3dp white outline drawn as the card's foreground at its 6dp radius. Episode rows, which are imagery-plus-text, use the quieter form: a 2dp white stroke around a raised (#2B2B31) fill at 8dp radius.
+## Other pages
 
-**The Text-Control Focus Rule.** Buttons, list rows, season chips and rail icons invert: solid white fill, ground-coloured text and icon. No outline, no scale.
+All pages use the same system. Corners come from `Shape` (6dp for buttons, rows, inputs and the snackbar; 8dp for cards and thumbnails; 20dp for chips and TV tabs). Page edges are 48dp on TV and 16dp on phone. Nothing springs or scales except grid posters.
 
-### Buttons
-- **Shape:** gently rounded (6dp), min height 44dp TV / 48dp phone, Label type, optional 22dp leading icon tinted with the text.
-- **Resting:** raised grey with white text. On phone, the single primary action (Play, Open link) rests white with ground text.
-- **Focus / Pressed:** white with ground text (focus); #DDDDDD pressed.
-- **Layout:** TV buttons wrap content; phone buttons in a pair stretch to equal width with the icon kept beside the centred label.
+- **Details:** the same hero as Home (a full-screen backdrop on TV, the logo sized to its own aspect, the ★ meta line, a 3-line synopsis), then Play and My List, then the season chips.
+  - Season chips are pills: a hairline outline at rest, white 18% when selected, white when focused.
+  - Episode rows show a 16:9 thumbnail (8dp corners) with a 3dp amber progress line. Under focus they get a raised fill and a 2dp white ring, and the text stays white.
+- **Streams:** a full-screen backdrop dimmed to 70% ground, with the title and episode line. Streams are grouped under addon section titles in list rows that invert to white under focus.
+- **Settings:** section titles over list rows, in a column capped at 640dp.
+- **Search:** a 6dp field that gets a 2dp white stroke under focus, then the same poster rows as Home, including the widening focus.
+- **My List:** a grid of posters that scale to 1.06 under focus.
+- **Sign-in:** the device code sits in a container box with a hairline outline, not a white box (white means focus). Inputs match the search field.
+- **Player:** the scrubber and played bar are amber, because they show progress.
 
-### Chips
-- **Style:** season pills (20dp), Label type, 8dp x 16dp padding.
-- **State:** unselected is transparent with a 1dp hairline and grey text; selected is raised grey with white text; focused is white with ground text.
+## Known gaps
 
-### Cards / Containers
-- **Poster card:** 2:3 (width x 1.5), 6dp corners, surface fill behind the art, title text centred in grey as the loading/failed fallback, no border at rest. An optional progress track (white at 30%) with amber fill sits 8dp in from the bottom and sides; minimum fill 4% so a started title always shows.
-- **Episode row:** 176dp (TV) / 132dp (phone) 16:9 thumbnail at 4dp with a 3dp amber progress line at its foot, then title (Label) and synopsis (Meta, grey).
-- **List row:** full-width surface row (6dp) for settings and streams; title in Label, optional 3-line Meta subtitle. Focus inverts to white; the subtitle turns muted-on-light.
-
-### Inputs / Fields
-- **Style:** surface fill, 6dp corners, white text, grey hint, 12dp x 16-18dp padding; the search field leads with a grey search icon.
-- **Focus:** a 2dp white stroke appears; the fill does not change.
-
-### Navigation
-- **TV rail:** 76dp, icons only, Search first. Inactive icons grey; the current page's icon amber; the focused icon a white 48dp disc with a ground icon. Entering the rail lands on the current page.
-- **Phone bottom bar:** four equal items, icon over 12sp label. Inactive grey; current page amber (icon and label). Touch only, no focus treatment.
-
-### Snackbar
-A light pill-ish bar (snack white, 6dp, 6dp elevation) with ground Label text, centred 96dp from the bottom, gone after 3.5s. The only light surface in the app.
-
-### Hero / Backdrop
-Two stacked image layers crossfade over 400ms; the incoming image only replaces the current one once it has loaded. Logo art (alpha-preserving) replaces the Display title when present.
+- `.impeccable/design.json` was generated from the previous system and is out of date.
 
 ## Do's and Don'ts
 
-### Do:
-- **Do** build every new screen from the Ui.kt primitives (`text`, `button`, `listRow`, `sectionTitle`, `focusRing`, `backdrop`) and the palette object; no new hex literals for roles that already exist.
-- **Do** pick the focus style by element type: imagery gets the 1.08 scale plus 3dp white outline; text controls get the solid white fill with ground text.
-- **Do** give every type size a TV twin, and treat the TV twin as the legibility floor (PRODUCT.md asks ~18sp for TV body, and the Body step is 18sp).
-- **Do** keep amber to progress bars, the bolt/wordmark, and the active nav item.
-- **Do** lay text over imagery with ground-coloured scrims.
-- **Do** use Material Design Icons vector paths as drawables, tinted by state.
+**Do:**
+- Build from the Ui.kt primitives (`text`, `button`, `listRow`, `focusRing`, `backdrop`, `wordmark`) and the `C` roles.
+- Lay type over art with ground-coloured or black scrims.
+- Give every type size a TV twin.
 
-### Don't:
-- **Don't** add Material Components, Compose, or a font download; platform Views and the system sans only. Light is a feature.
-- **Don't** use amber for buttons, focus, links, headings or highlights.
-- **Don't** put borders on posters or cards at rest.
-- **Don't** add shadows for depth; tonal steps and scrims carry it.
-- **Don't** use Netflix's red or its marks.
-- **Don't** give phone a focus-following hero, or TV a scrolling one.
+**Don't:**
+- Use amber for anything outside its budget.
+- Add borders to cards at rest, or shadows for depth.
+- Bring back a rail on TV or a focus-following hero on phone.
+- Add Material Components, Compose, Palette or a downloaded font.

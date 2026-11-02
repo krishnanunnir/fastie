@@ -58,7 +58,7 @@ class PlayerActivity : Activity() {
             setBackgroundColor(android.graphics.Color.BLACK)
             // The scrubber takes the theme's primary, like every other progress indicator in Fastie.
             findViewById<androidx.media3.ui.DefaultTimeBar>(androidx.media3.ui.R.id.exo_progress)?.apply {
-                setPlayedColor(C.primary); setScrubberColor(C.primary); setBufferedColor(C.alpha(C.onSurface, 0.4f))
+                setPlayedColor(C.amber); setScrubberColor(C.amber); setBufferedColor(C.alpha(C.onSurface, 0.4f))
             }
         }
         setContentView(FrameLayout(this).apply { addView(view, FrameLayout.LayoutParams(-1, -1)) })

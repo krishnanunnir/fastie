@@ -26,7 +26,7 @@ class SignInActivity : Activity() {
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         edgeToEdge()
-        val side = dp(if (isTv) 72 else 20)
+        val side = dp(if (isTv) 48 else 20)
         val col = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(side, dp(if (isTv) 56 else 72), side, dp(48))
@@ -41,9 +41,9 @@ class SignInActivity : Activity() {
             typeface = Typeface.create("sans-serif", Typeface.BOLD)
             textSize = if (isTv) 56f else 44f
             letterSpacing = 0.08f
-            setTextColor(C.onPrimaryContainer)
+            setTextColor(C.onSurface)
             setPadding(dp(32), dp(16), dp(32), dp(16))
-            background = rounded(C.primaryContainer, dp(Shape.XL).toFloat())
+            background = rounded(C.container, dp(Shape.M).toFloat(), dp(1), C.outlineVariant)
         }
         col.addView(code, lp(-2, -2).apply { topMargin = dp(16); bottomMargin = dp(16) })
         val buttons = LinearLayout(this)
@@ -83,14 +83,12 @@ class SignInActivity : Activity() {
     private fun field(label: String, type: Int) = EditText(this).apply {
         hint = label
         inputType = type
+        typeface = Typeface.DEFAULT // password fields otherwise fall back to monospace
         isSingleLine = true
         setTextColor(C.onSurface)
         setHintTextColor(C.variant)
-        setPadding(dp(20), dp(16), dp(20), dp(16))
-        background = android.graphics.drawable.StateListDrawable().apply {
-            addState(intArrayOf(android.R.attr.state_focused), rounded(C.containerHigh, dp(Shape.L).toFloat(), dp(2), C.primary))
-            addState(intArrayOf(), rounded(C.containerHigh, dp(Shape.L).toFloat()))
-        }
+        setPadding(dp(18), dp(14), dp(18), dp(14))
+        background = fieldBackground()
         gravity = Gravity.CENTER_VERTICAL
     }
 

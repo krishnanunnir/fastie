@@ -27,11 +27,11 @@ class StreamsActivity : Activity() {
         val episode = intent.getIntExtra("episode", -1)
 
         val root = FrameLayout(this).apply { setBackgroundColor(C.ground) }
-        val layers = backdrop(root, if (isTv) 0.8f else 0.4f)
+        val layers = backdrop(root, if (isTv) 1f else 0.4f)
         crossfade(layers, item.backgroundOrHub, resources.displayMetrics.widthPixels)
         // Dim the art further: this screen is for reading.
         root.addView(View(this).apply { setBackgroundColor(C.alpha(C.ground, 0.7f)) }, FrameLayout.LayoutParams(-1, -1))
-        val side = dp(if (isTv) 56 else 16)
+        val side = dp(if (isTv) 48 else 16)
         col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(side, dp(if (isTv) 40 else 56), side, dp(48)) }
         col.addView(text(T.DISPLAY, lines = 2, s = item.name.ifBlank { "Streams" }))
         if (season >= 0) {
@@ -62,7 +62,6 @@ class StreamsActivity : Activity() {
                     if (first == null) first = row
                 }
             }
-            groupRows(col)
             first?.requestFocus()
         }
     }

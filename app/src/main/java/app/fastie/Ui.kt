@@ -1,7 +1,5 @@
 package app.fastie
 
-import android.animation.ValueAnimator
-import android.annotation.SuppressLint
 import android.app.UiModeManager
 import android.content.Context
 import android.content.pm.PackageManager
@@ -15,98 +13,49 @@ import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
-import android.os.Build
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewOutlineProvider
-import android.view.animation.Interpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import kotlin.math.cos
-import kotlin.math.exp
-import kotlin.math.sqrt
 
 /**
- * Material 3 dark color roles. On Android 12+ they come from the wallpaper (Material You);
- * elsewhere, and on most TV boxes, from Fastie's amber seed. Call [init] before building UI.
+ * Spotlight colour roles: a true-black ground, white as the focus colour, and amber, the only accent,
+ * kept to progress, the wordmark and the current page. Role names follow Material so screens read the same.
  */
 object C {
-    var ground = 0xFF16130E.toInt()          // surface
-    var container = 0xFF221F1A.toInt()       // surfaceContainer
-    var containerHigh = 0xFF2D2924.toInt()   // surfaceContainerHigh
-    var containerHighest = 0xFF38342E.toInt()
-    var onSurface = 0xFFEBE1D6.toInt()
-    var variant = 0xFFD4C4B2.toInt()         // onSurfaceVariant
-    var outlineVariant = 0xFF504538.toInt()
-    var primary = 0xFFFFB94F.toInt()
-    var onPrimary = 0xFF452B00.toInt()
-    var primaryContainer = 0xFF633F00.toInt()
-    var onPrimaryContainer = 0xFFFFDDB4.toInt()
-    var secondaryContainer = 0xFF574427.toInt()
-    var onSecondaryContainer = 0xFFFBDEBC.toInt()
-    var inverse = 0xFFEBE1D6.toInt()
-    var inverseOn = 0xFF353027.toInt()
-
-    fun init(ctx: Context) {
-        if (Build.VERSION.SDK_INT < 31) return
-        fun c(id: Int) = ctx.getColor(id)
-        val n1 = c(android.R.color.system_neutral1_900)
-        ground = blend(n1, Color.BLACK, 0.4f)
-        container = n1
-        containerHigh = blend(n1, c(android.R.color.system_neutral1_800), 0.6f)
-        containerHighest = c(android.R.color.system_neutral1_800)
-        onSurface = c(android.R.color.system_neutral1_100)
-        variant = c(android.R.color.system_neutral2_200)
-        outlineVariant = c(android.R.color.system_neutral2_700)
-        primary = c(android.R.color.system_accent1_200)
-        onPrimary = c(android.R.color.system_accent1_800)
-        primaryContainer = c(android.R.color.system_accent1_700)
-        onPrimaryContainer = c(android.R.color.system_accent1_100)
-        secondaryContainer = c(android.R.color.system_accent2_700)
-        onSecondaryContainer = c(android.R.color.system_accent2_100)
-        inverse = onSurface
-        inverseOn = c(android.R.color.system_neutral1_800)
-    }
+    const val ground = 0xFF08080A.toInt()
+    const val container = 0xFF17171A.toInt()
+    const val containerHigh = 0xFF222226.toInt()
+    const val containerHighest = 0xFF2E2E33.toInt()
+    const val onSurface = 0xFFFFFFFF.toInt()
+    const val variant = 0xFFA3A3AB.toInt()
+    const val outlineVariant = 0xFF3A3A42.toInt()
+    // White means focus: focused and primary controls invert to white with ground ink.
+    const val primary = onSurface
+    const val onPrimary = ground
+    const val primaryContainer = onSurface
+    const val onPrimaryContainer = ground
+    const val secondaryContainer = 0x2EFFFFFF          // white at 18%: resting buttons, selected chips
+    const val onSecondaryContainer = onSurface
+    const val inverse = 0xFFF2F2F4.toInt()
+    const val inverseOn = ground
+    const val amber = 0xFFFFB627.toInt()
 
     fun alpha(color: Int, a: Float) = (color and 0x00FFFFFF) or ((a * 255).toInt() shl 24)
-
-    private fun blend(a: Int, b: Int, t: Float) = Color.rgb(
-        (Color.red(a) * (1 - t) + Color.red(b) * t).toInt(),
-        (Color.green(a) * (1 - t) + Color.green(b) * t).toInt(),
-        (Color.blue(a) * (1 - t) + Color.blue(b) * t).toInt())
 }
 
-/** Expressive corner scale, in dp. */
+/** Spotlight corners, in dp: buttons, rows, inputs and the snackbar; cards and thumbnails; chips and TV tabs. */
 object Shape {
-    const val S = 8
-    const val M = 12
-    const val L = 16
-    const val XL = 28
-    const val FULL = 999
+    const val S = 6
+    const val M = 8
+    const val PILL = 20
 }
-
-/**
- * Material 3 Expressive's spatial spring (damping 0.8, stiffness 380) as an interpolator: a small, quick overshoot.
- * Platform-only, so no dynamicanimation library.
- */
-class Spring(private val damping: Float = 0.8f, stiffness: Float = 380f) : Interpolator {
-    private val w = sqrt(stiffness)
-    private val wd = w * sqrt(1 - damping * damping)
-    // The spring settles in about this many seconds; animations using it should last as long.
-    val duration = (4.6f / (damping * w) * 1000).toLong()
-    override fun getInterpolation(t: Float): Float {
-        val s = t * duration / 1000f
-        return 1 - exp(-damping * w * s) * (cos(wd * s) + damping * w / wd * kotlin.math.sin(wd * s))
-    }
-}
-
-val SPRING = Spring()
 
 private val FOCUSED = intArrayOf(android.R.attr.state_focused)
 private val PRESSED = intArrayOf(android.R.attr.state_pressed)
@@ -119,11 +68,11 @@ val Context.isTv: Boolean
 
 fun Context.dp(v: Number) = (v.toFloat() * resources.displayMetrics.density).toInt()
 
-/** Type scale, Expressive-emphasised headlines. TV sizes are larger: the screen is read from 3 m away. */
+/** Type scale. TV sizes are larger: the screen is read from 3 m away. */
 enum class T(val phone: Float, val tv: Float, val style: Int, val family: String, val tracking: Float = 0f) {
     DISPLAY(34f, 40f, Typeface.BOLD, "sans-serif", -0.02f),
     TITLE(22f, 24f, Typeface.BOLD, "sans-serif", -0.01f),
-    ROW(18f, 21f, Typeface.BOLD, "sans-serif", -0.01f),
+    ROW(17f, 19f, Typeface.NORMAL, "sans-serif-medium"),
     BODY(14f, 18f, Typeface.NORMAL, "sans-serif"),
     META(13f, 16f, Typeface.NORMAL, "sans-serif-medium"),
     LABEL(14f, 16f, Typeface.BOLD, "sans-serif-medium", 0.01f),
@@ -151,65 +100,38 @@ class MorphOutline(var radius: Float) : ViewOutlineProvider() {
     override fun getOutline(v: View, o: Outline) = o.setRoundRect(0, 0, v.width, v.height, radius.coerceAtMost(v.height / 2f))
 }
 
-/** Springs [v]'s corners (outline and any GradientDrawable layers it owns) to [to]. */
-fun morph(v: View, outline: MorphOutline?, from: Float, to: Float, vararg shapes: GradientDrawable) {
-    (v.getTag(R.id.morph) as? ValueAnimator)?.cancel()
-    v.setTag(R.id.morph, ValueAnimator.ofFloat(from, to).apply {
-        duration = SPRING.duration
-        interpolator = SPRING
-        addUpdateListener {
-            val r = (it.animatedValue as Float).coerceAtLeast(0f)
-            outline?.let { o -> o.radius = r; v.invalidateOutline() }
-            shapes.forEach { s -> s.cornerRadius = r }
-        }
-        start()
-    })
-}
-
-/**
- * The imagery focus: the card springs up in scale and its corners round further (Expressive shape morph),
- * with an outline ring in the on-surface color.
- */
-fun View.focusMorph(outline: MorphOutline, rest: Float, focused: Float, scale: Float = 1.08f) {
-    isFocusable = true
-    val ring = rounded(Color.TRANSPARENT, rest, context.dp(3), C.onSurface)
-    foreground = StateListDrawable().apply {
-        addState(FOCUSED, ring)
-        addState(intArrayOf(), rounded(Color.TRANSPARENT, rest))
-    }
-    onFocusChangeListener = View.OnFocusChangeListener { v, has ->
-        v.animate().scaleX(if (has) scale else 1f).scaleY(if (has) scale else 1f).translationZ(if (has) 8f else 0f)
-            .setInterpolator(SPRING).setDuration(SPRING.duration).start()
-        morph(v, outline, outline.radius, if (has) focused else rest, ring)
-    }
-}
-
 fun Context.icon(res: Int): Drawable = getDrawable(res)!!.mutate()
 
 /**
- * Expressive pill button. Phone: filled (primary) or tonal (secondary container); TV: tonal at rest, filled when focused.
- * Pressing squishes the pill toward a rounded square and springs back.
+ * Spotlight's imagery focus: a 2dp white ring drawn [gap] outside the art, so the view needs that much padding.
+ * The art itself is clipped to [radius] by its own outline.
  */
-@SuppressLint("ClickableViewAccessibility")
+fun View.focusRing(radius: Float, gap: Int) {
+    isFocusable = true
+    foreground = StateListDrawable().apply {
+        addState(FOCUSED, rounded(Color.TRANSPARENT, radius + gap, context.dp(2), C.onSurface))
+    }
+}
+
+/**
+ * A 6dp button. Phone: the one primary action rests white, the rest on white at 18%. Focus inverts to white with ground ink.
+ */
 fun Context.button(label: String, iconRes: Int? = null, primary: Boolean = false, onClick: () -> Unit): TextView {
     val loud = primary && !isTv
-    val pill = dp(Shape.FULL).toFloat()
-    val rest = rounded(if (loud) C.primary else C.secondaryContainer, pill)
-    val focus = rounded(C.primary, pill)
-    val press = rounded(if (loud) C.primary else C.containerHighest, pill)
+    val r = dp(6).toFloat()
+    val colors = ColorStateList(arrayOf(FOCUSED, intArrayOf()),
+        intArrayOf(C.onPrimary, if (loud) C.onPrimary else C.onSecondaryContainer))
     return text(T.LABEL, s = label).apply {
         gravity = Gravity.CENTER
         isFocusable = true
         isClickable = true
-        minHeight = dp(if (isTv) 48 else 56)
-        setPadding(dp(24), dp(12), dp(28), dp(12))
+        minHeight = dp(48)
+        setPadding(dp(18), dp(10), dp(22), dp(10))
         background = StateListDrawable().apply {
-            addState(FOCUSED, focus)
-            addState(PRESSED, press)
-            addState(intArrayOf(), rest)
+            addState(FOCUSED, rounded(C.primary, r))
+            addState(PRESSED, rounded(if (loud) 0xFFDDDDDD.toInt() else C.alpha(C.onSurface, 0.28f), r))
+            addState(intArrayOf(), rounded(if (loud) C.primary else C.secondaryContainer, r))
         }
-        val colors = ColorStateList(arrayOf(FOCUSED, intArrayOf()),
-            intArrayOf(C.onPrimary, if (loud) C.onPrimary else C.onSecondaryContainer))
         setTextColor(colors)
         iconRes?.let {
             val d = icon(it).apply { setBounds(0, 0, dp(22), dp(22)); setTintList(colors) }
@@ -219,39 +141,26 @@ fun Context.button(label: String, iconRes: Int? = null, primary: Boolean = false
             addOnLayoutChangeListener { v, l, _, r, _, _, _, _, _ ->
                 val tv = v as TextView
                 val content = tv.paint.measureText(tv.text.toString()) + dp(22) + tv.compoundDrawablePadding
-                val side = ((r - l - content) / 2).toInt().coerceAtLeast(dp(20))
+                val side = ((r - l - content) / 2).toInt().coerceAtLeast(dp(18))
                 if (side != tv.paddingStart) tv.post { tv.setPaddingRelative(side, tv.paddingTop, side, tv.paddingBottom) }
             }
-        }
-        val square = dp(Shape.M).toFloat()
-        setOnTouchListener { v, e ->
-            val h = v.height / 2f
-            when (e.actionMasked) {
-                MotionEvent.ACTION_DOWN -> morph(v, null, h, square, rest, focus, press)
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> morph(v, null, square, h, rest, focus, press)
-            }
-            false
-        }
-        onFocusChangeListener = View.OnFocusChangeListener { v, has ->
-            // The grown pill would be cut off by its row.
-            listOf(v.parent, v.parent?.parent).forEach { (it as? ViewGroup)?.apply { clipChildren = false; clipToPadding = false } }
-            v.animate().scaleX(if (has) 1.06f else 1f).scaleY(if (has) 1.06f else 1f)
-                .setInterpolator(SPRING).setDuration(SPRING.duration).start()
         }
         setOnClickListener { onClick() }
     }
 }
 
-/**
- * A row for settings and stream lists. Consecutive rows form one Expressive group: big outer corners,
- * small inner ones, 2dp apart. Call [groupRows] on their parent once it's filled.
- */
+/** A row for settings and stream lists: a 6dp surface that inverts to white with ground ink under focus. */
 fun Context.listRow(title: String, sub: String? = null, onClick: (() -> Unit)?): LinearLayout = LinearLayout(this).apply {
     orientation = LinearLayout.VERTICAL
-    setPadding(dp(20), dp(16), dp(20), dp(16))
-    tag = ROW_TAG
-    val titleColors = ColorStateList(arrayOf(FOCUSED, intArrayOf()), intArrayOf(C.onPrimaryContainer, C.onSurface))
-    val subColors = ColorStateList(arrayOf(FOCUSED, intArrayOf()), intArrayOf(C.onPrimaryContainer, C.variant))
+    setPadding(dp(18), dp(14), dp(18), dp(14))
+    val r = dp(Shape.S).toFloat()
+    background = StateListDrawable().apply {
+        addState(FOCUSED, rounded(C.primary, r))
+        addState(PRESSED, rounded(C.containerHigh, r))
+        addState(intArrayOf(), rounded(C.container, r))
+    }
+    val titleColors = ColorStateList(arrayOf(FOCUSED, intArrayOf()), intArrayOf(C.onPrimary, C.onSurface))
+    val subColors = ColorStateList(arrayOf(FOCUSED, intArrayOf()), intArrayOf(0xFF4A4A52.toInt(), C.variant))
     addView(text(T.LABEL, s = title).apply { setTextColor(titleColors); isDuplicateParentStateEnabled = true })
     if (!sub.isNullOrBlank()) addView(text(T.META, lines = 3, s = sub).apply {
         setTextColor(subColors); isDuplicateParentStateEnabled = true; setPadding(0, dp(4), 0, 0)
@@ -259,55 +168,61 @@ fun Context.listRow(title: String, sub: String? = null, onClick: (() -> Unit)?):
     if (onClick != null) { isFocusable = true; isClickable = true; setOnClickListener { onClick() } }
 }
 
-private const val ROW_TAG = "fastie-row"
+/** A text field: a 6dp surface with a 2dp white stroke under focus. */
+fun Context.fieldBackground() = StateListDrawable().apply {
+    addState(FOCUSED, rounded(C.containerHigh, dp(Shape.S).toFloat(), dp(2), C.onSurface))
+    addState(intArrayOf(), rounded(C.containerHigh, dp(Shape.S).toFloat()))
+}
 
-/** Gives each run of [listRow]s grouped corners: 28dp outside, 4dp between. */
-fun groupRows(parent: ViewGroup) {
-    val ctx = parent.context
-    val big = ctx.dp(Shape.XL).toFloat()
-    val small = ctx.dp(4).toFloat()
-    val kids = (0 until parent.childCount).map(parent::getChildAt)
-    kids.forEachIndexed { i, v ->
-        if (v.tag != ROW_TAG) return@forEachIndexed
-        val top = if (kids.getOrNull(i - 1)?.tag == ROW_TAG) small else big
-        val bottom = if (kids.getOrNull(i + 1)?.tag == ROW_TAG) small else big
-        val radii = floatArrayOf(top, top, top, top, bottom, bottom, bottom, bottom)
-        fun shape(color: Int) = GradientDrawable().apply { setColor(color); cornerRadii = radii }
-        v.background = StateListDrawable().apply {
-            addState(FOCUSED, shape(C.primaryContainer))
-            addState(PRESSED, shape(C.containerHighest))
-            addState(intArrayOf(), shape(C.container))
-        }
-        (v.layoutParams as? ViewGroup.MarginLayoutParams)?.bottomMargin = if (bottom == small) ctx.dp(2) else ctx.dp(8)
+/** A pill chip: hairline at rest, white 18% when selected, white with ground ink under focus. */
+fun Context.chip(label: String, onClick: () -> Unit) = text(T.LABEL, s = label).apply {
+    isFocusable = true
+    isClickable = true
+    gravity = Gravity.CENTER
+    minHeight = dp(if (isTv) 40 else 44)
+    setPadding(dp(16), dp(8), dp(16), dp(8))
+    val r = dp(Shape.PILL).toFloat()
+    background = StateListDrawable().apply {
+        addState(FOCUSED, rounded(C.primary, r))
+        addState(SELECTED, rounded(C.secondaryContainer, r))
+        addState(intArrayOf(), rounded(Color.TRANSPARENT, r, dp(1), C.outlineVariant))
     }
+    setTextColor(ColorStateList(arrayOf(FOCUSED, SELECTED, intArrayOf()), intArrayOf(C.onPrimary, C.onSurface, C.variant)))
+    setOnClickListener { onClick() }
+}
+
+/** "★ 7.8  ·  2024  ·  Drama, Crime  ·  1h 49m": the rating first, in full white, for text of [size] px. */
+fun Context.metaText(item: Item, size: Float): CharSequence = android.text.SpannableStringBuilder().apply {
+    item.rating?.let {
+        val star = (size * 0.95f).toInt()
+        append(" ", android.text.style.ImageSpan(icon(R.drawable.ic_star).apply { setBounds(0, 0, star, star) }, android.text.style.ImageSpan.ALIGN_BASELINE), 0)
+        val start = length
+        append(" $it")
+        setSpan(android.text.style.ForegroundColorSpan(C.onSurface), start, length, 0)
+        setSpan(android.text.style.StyleSpan(Typeface.BOLD), start, length, 0)
+        if (item.metaLine.isNotBlank()) append("  ·  ")
+    }
+    append(item.metaLine)
 }
 
 fun Context.sectionTitle(s: String) = text(T.ROW, s = s).apply { setPadding(dp(4), dp(28), 0, dp(12)) }
 
-/**
- * Material 3's progress indicator: a rounded active track, a gap, the remaining track, and a stop dot at the end.
- */
+/** A 4dp progress line: white at 30% under an amber fill, rounded ends. */
 class GapProgress(ctx: Context) : View(ctx) {
     var fraction = 0f
         set(v) { field = v.coerceIn(0f, 1f); invalidate() }
-    private val active = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = C.primary; strokeCap = Paint.Cap.ROUND }
-    private val track = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = C.secondaryContainer; strokeCap = Paint.Cap.ROUND }
+    private val active = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = C.amber }
+    private val track = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = C.alpha(C.onSurface, 0.3f) }
 
     override fun onDraw(canvas: Canvas) {
-        val h = height.toFloat()
-        val r = h / 2
-        val gap = h
-        active.strokeWidth = h
-        track.strokeWidth = h
-        val end = r + (width - h) * fraction
-        if (fraction > 0f) canvas.drawLine(r, r, end, r, active)
-        if (end + gap < width - r) canvas.drawLine(end + gap + r, r, width - r, r, track)
-        canvas.drawCircle(width - r, r, r * 0.7f, active)
+        val r = height / 2f
+        canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), r, r, track)
+        canvas.drawRoundRect(0f, 0f, width * fraction, height.toFloat(), r, r, active)
     }
 }
 
 /** Left-to-right and bottom-up scrims, in the surface color, that keep type readable over any backdrop. */
-fun Context.backdrop(parent: FrameLayout, heightFraction: Float): Pair<ImageView, ImageView> {
+fun Context.backdrop(parent: FrameLayout, heightFraction: Float, bottom: Float = 0.55f): Pair<ImageView, ImageView> {
     val h = (resources.displayMetrics.heightPixels * heightFraction).toInt()
     val a = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
     val b = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0f }
@@ -320,7 +235,11 @@ fun Context.backdrop(parent: FrameLayout, heightFraction: Float): Pair<ImageView
     }, FrameLayout.LayoutParams((resources.displayMetrics.widthPixels * if (isTv) 0.7f else 0f).toInt().coerceAtLeast(1), h))
     parent.addView(View(this).apply {
         background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, intArrayOf(g, C.alpha(g, 0.8f), C.alpha(g, 0f)))
-    }, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (h * 0.55f).toInt(), Gravity.TOP).apply { topMargin = h - (h * 0.55f).toInt() })
+    }, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (h * bottom).toInt(), Gravity.TOP).apply { topMargin = h - (h * bottom).toInt() })
+    // Keeps the TV tabs and the phone status bar readable over bright art.
+    parent.addView(View(this).apply {
+        background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(C.alpha(g, 0.7f), C.alpha(g, 0f)))
+    }, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (h * 0.22f).toInt()))
     return a to b
 }
 
@@ -338,5 +257,10 @@ fun crossfade(layers: Pair<ImageView, ImageView>, url: String?, width: Int) {
 
 fun lp(w: Int = ViewGroup.LayoutParams.MATCH_PARENT, h: Int = ViewGroup.LayoutParams.WRAP_CONTENT) = LinearLayout.LayoutParams(w, h)
 
-val SELECTED_STATE = SELECTED
-val FOCUSED_STATE = FOCUSED
+
+/** The amber bolt and "fastie": the brand on the TV tab bar and the phone's home. */
+fun Context.wordmark() = LinearLayout(this).apply {
+    gravity = Gravity.CENTER_VERTICAL
+    addView(ImageView(context).apply { setImageResource(R.drawable.ic_bolt); setColorFilter(C.amber) }, lp(dp(22), dp(22)))
+    addView(text(T.TITLE, C.amber, s = "fastie").apply { setPadding(dp(4), 0, 0, 0) })
+}

@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fastie Home Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Bebas+Neue&family=Playfair+Display:ital,wght@0,900;1,700&family=Archivo+Black&family=DM+Serif+Display&family=Oswald:wght@600&family=Anton&family=Cormorant+Garamond:ital,wght@1,700&display=swap" rel="stylesheet">
+<style>
+/* ---------- page chrome (not part of the app) ---------- */
+:root { --page:#0B0B0D; --ink:#EDEDF0; --dim:#9A9AA2; --line:#26262C; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin:0; background:var(--page); color:var(--ink); font-family: Roboto, system-ui, sans-serif; }
+::selection { background:#FFB627; color:#0F0F11; }
+.top { position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:24px; padding:14px 28px; background:color-mix(in srgb, var(--page) 94%, transparent); border-bottom:1px solid var(--line); }
+.top h1 { font-size:17px; font-weight:700; margin:0; letter-spacing:-.01em; }
+.top h1 span { color:var(--dim); font-weight:400; }
+.tabs { display:flex; gap:6px; margin-left:auto; }
+.tabs button { font:500 14px Roboto; color:var(--dim); background:transparent; border:1px solid var(--line); padding:9px 16px; border-radius:20px; cursor:pointer; }
+.tabs button[aria-selected=true] { background:var(--ink); color:#0B0B0D; border-color:var(--ink); }
+.tabs button:focus-visible { outline:2px solid #FFB627; outline-offset:2px; }
+.dir { display:none; padding:28px 28px 64px; max-width:1680px; margin:0 auto; }
+.dir.on { display:block; }
+.intro { display:grid; grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); gap:12px 48px; margin-bottom:26px; }
+.intro h2 { font-size:30px; margin:0 0 8px; letter-spacing:-.02em; }
+.intro p { margin:0; color:#C9C9CF; line-height:1.5; font-size:15px; max-width:62ch; }
+.intro ul { margin:0; padding-left:18px; color:#C9C9CF; font-size:14px; line-height:1.6; }
+.intro b { color:var(--ink); }
+.cost { margin-top:10px !important; color:var(--dim) !important; font-size:13px !important; }
+.stage { display:grid; grid-template-columns: minmax(0,1fr) 340px; gap:28px; align-items:start; }
+.label { font:500 12px Roboto; color:var(--dim); letter-spacing:.06em; text-transform:uppercase; margin:0 0 10px; display:flex; justify-content:space-between; }
+.label i { font-style:normal; text-transform:none; letter-spacing:0; }
+.fit { position:relative; overflow:hidden; border-radius:10px; outline:1px solid var(--line); }
+.fit.phone { border-radius:30px; outline:6px solid #1A1A1E; }
+.fit > .screen { position:absolute; left:0; top:0; transform-origin:0 0; overflow:hidden; }
+.fit.tvfit { cursor:pointer; }
+.fit.tvfit.active { outline:2px solid #FFB627; }
+@media (max-width: 760px) { .top { flex-wrap:wrap; gap:10px; padding:12px 16px; } .top h1 span { display:none; } .tabs { margin-left:0; } .dir { padding:20px 16px 48px; } }
+@media (max-width: 1100px) { .stage, .intro { grid-template-columns: 1fr; } .stage > div:last-child { max-width:340px; } }
+
+/* ---------- shared app pieces (units are dp) ---------- */
+.screen { font-family: Roboto, sans-serif; color:#fff; -webkit-font-smoothing:antialiased; }
+.screen svg { width:24px; height:24px; fill:currentColor; display:block; }
+.bd { position:absolute; overflow:hidden; }
+.bd img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transition:opacity .4s ease; }
+.logo { line-height:.92; letter-spacing:-.01em; color:#fff; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; text-wrap:balance; }
+.meta { display:flex; flex-wrap:wrap; align-items:center; gap:0 8px; white-space:nowrap; }
+.meta .dot::before { content:'·'; }
+.syn { overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; }
+.rowsWrap { position:absolute; left:0; right:0; overflow:hidden; }
+.rowsIn { transition: transform .32s cubic-bezier(.2,.8,.2,1); }
+.track { display:flex; transition: transform .32s cubic-bezier(.2,.8,.2,1); }
+.card { position:relative; flex:0 0 auto; transition: transform .15s ease-out, width .25s cubic-bezier(.2,.8,.2,1); }
+.art { position:absolute; inset:0; overflow:hidden; background: linear-gradient(160deg, hsl(var(--h) 35% 30%), hsl(var(--h) 30% 12%)); }
+.art img { width:100%; height:100%; object-fit:cover; display:block; }
+.art .pt { position:absolute; left:8px; right:8px; bottom:10px; text-align:center; color:#fff; font-size:15px; line-height:1; text-shadow:0 1px 8px rgba(0,0,0,.6); }
+.art::after { content:''; position:absolute; inset:0; background:linear-gradient(0deg, rgba(0,0,0,.55), rgba(0,0,0,0) 45%); pointer-events:none; }
+.prog { position:absolute; left:8px; right:8px; bottom:8px; height:4px; border-radius:2px; background:rgba(255,255,255,.3); z-index:2; }
+.prog b { display:block; height:100%; border-radius:2px; }
+.hscroll { display:flex; overflow-x:auto; scrollbar-width:none; }
+.hscroll::-webkit-scrollbar, .pscroll::-webkit-scrollbar { display:none; }
+.pscroll { position:absolute; inset:0; overflow-y:auto; scrollbar-width:none; }
+.status { position:absolute; top:0; left:0; right:0; height:28px; display:flex; align-items:center; justify-content:space-between; padding:0 22px; font:500 13px Roboto; z-index:20; color:#fff; pointer-events:none; }
+.status span:last-child { display:flex; gap:5px; align-items:center; }
+.status i { display:block; width:15px; height:9px; border:1.5px solid #fff; border-radius:2px; }
+.btn { display:flex; align-items:center; justify-content:center; gap:8px; font:700 15px Roboto; }
+.btn svg { width:22px; height:22px; }
+
+/* ================= A · MARQUEE ================= */
+.A { --g:#0F0F11; --s:#1C1C21; --r:#2B2B31; --syn:#D6D6DA; --m:#A3A3A8; --amber:#FFB627; background:var(--g); }
+.A.tv .bd { right:0; top:0; width:88%; height:74%; }
+.A .bd::after { content:''; position:absolute; inset:0; background:
+  linear-gradient(90deg, var(--g) 0%, color-mix(in srgb, var(--g) 82%, transparent) 16%, color-mix(in srgb, var(--g) 0%, transparent) 64%),
+  linear-gradient(0deg, var(--g) 0%, color-mix(in srgb, var(--g) 70%, transparent) 22%, transparent 58%),
+  linear-gradient(180deg, color-mix(in srgb, var(--g) 50%, transparent) 0%, transparent 18%); }
+.A.tv .hero { position:absolute; left:116px; top:50px; width:410px; }
+.A.tv .logo { font-size:54px; margin-bottom:16px; }
+.A .meta { font:500 16px Roboto; color:var(--m); margin-bottom:12px; }
+.A .meta .rt { color:#fff; display:flex; align-items:center; gap:4px; }
+.A .meta .rt svg { width:15px; height:15px; color:var(--m); }
+.A .meta .tag { color:#fff; border:1px solid rgba(255,255,255,.45); border-radius:3px; padding:1px 5px; font-size:12px; }
+.A .syn { font:400 18px/1.32 Roboto; color:var(--syn); -webkit-line-clamp:3; }
+.A.tv .rowsWrap { top:262px; bottom:0; }
+.A.tv .row { padding:14px 0 10px 116px; clip-path: inset(0 0 0 104px); }
+.A.tv .row h3 { font:700 19px Roboto; margin:0 0 12px; }
+.A .track { gap:14px; }
+.A.tv .card { width:118px; height:177px; }
+.A .art { border-radius:6px; }
+.A .art .pt { font-size:14px; }
+.A .prog b { background:var(--amber); }
+.A.tv .card.f { transform:scale(1.08); z-index:3; }
+.A.tv .card.f::before { content:''; position:absolute; inset:-5px; border:3px solid #fff; border-radius:10px; z-index:4; }
+.A.tv .card:not(.f) .art { filter:brightness(.82); transition:filter .15s; }
+.A .rail { position:absolute; left:0; top:0; bottom:0; width:76px; z-index:10; display:flex; flex-direction:column; align-items:flex-start; padding:28px 14px 0; transition: width .2s ease-out, background .2s;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--g) 95%, transparent), transparent); }
+.A .rail .bolt { color:var(--amber); width:28px; height:28px; margin:0 0 36px 10px; }
+.A .ni { display:flex; align-items:center; gap:16px; height:48px; width:48px; padding-left:12px; border-radius:24px; margin-bottom:12px; color:var(--m); overflow:hidden; white-space:nowrap; transition: width .2s ease-out, background .12s, color .12s; }
+.A .ni span { font:700 17px Roboto; opacity:0; transition:opacity .15s; }
+.A .ni.on { color:var(--amber); }
+.A.inrail .rail { width:240px; background: linear-gradient(90deg, var(--g) 55%, transparent); }
+.A.inrail .ni { width:200px; }
+.A.inrail .ni span { opacity:1; }
+.A .ni.f { background:#fff; color:var(--g); }
+.A.inrail .card.f { transform:none; }
+.A.inrail .card.f::before { display:none; }
+/* phone */
+.A.ph .hero-ph { position:relative; height:590px; }
+.A.ph .bd { inset:0; }
+.A.ph .hero { position:absolute; left:16px; right:16px; bottom:8px; }
+.A.ph .logo { font-size:40px; margin-bottom:12px; }
+.A.ph .meta { font-size:13px; margin-bottom:8px; }
+.A.ph .syn { font-size:14px; -webkit-line-clamp:3; }
+.A.ph .btns { display:flex; gap:10px; margin-top:18px; }
+.A.ph .btns .btn { flex:1; height:48px; border-radius:6px; background:var(--r); color:#fff; }
+.A.ph .btns .btn.pri { background:#fff; color:var(--g); }
+.A.ph .wm { position:absolute; top:36px; left:16px; z-index:5; color:var(--amber); font:700 22px Roboto; letter-spacing:-.02em; text-shadow:0 2px 12px rgba(0,0,0,.6); }
+.A.ph .row { padding:18px 0 0; }
+.A.ph .row h3 { font:700 16px Roboto; margin:0 16px 10px; }
+.A.ph .hscroll { gap:8px; padding:0 16px; }
+.A.ph .card { width:108px; height:162px; }
+.A.ph .bar, .C.ph .bar { position:absolute; left:0; right:0; bottom:0; height:72px; display:flex; padding:8px 0 14px; background:color-mix(in srgb, var(--g) 96%, transparent); z-index:10; }
+.bar .bi { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; font:500 12px Roboto; color:var(--m); }
+.bar .bi.on { color:var(--amber); }
+
+/* ================= B · TONAL ================= */
+.B { --g:#16130E; --c:#221F1A; --ch:#2D2924; --chh:#38342E; --on:#EBE1D6; --v:#D4C4B2; --ol:#504538; --p:#FFB94F; --onp:#452B00; --sc:#574427; --onsc:#FBDEBC; background:var(--g); color:var(--on); }
+.B .rail { position:absolute; left:0; top:0; bottom:0; width:96px; display:flex; flex-direction:column; align-items:center; padding-top:26px; z-index:10; }
+.B .rail .bolt { color:var(--p); width:30px; height:30px; margin-bottom:30px; }
+.B .ni { display:flex; flex-direction:column; align-items:center; gap:4px; margin-bottom:14px; font:500 12px Roboto; color:var(--v); }
+.B .ni .pill { width:56px; height:32px; border-radius:16px; display:flex; align-items:center; justify-content:center; transition: background .2s, transform .3s cubic-bezier(.3,1.5,.5,1); }
+.B .ni.on { color:var(--on); font-weight:700; }
+.B .ni.on .pill { background:var(--sc); color:var(--onsc); }
+.B .ni.f .pill { background:var(--p); color:var(--onp); transform:scaleX(1.08); }
+.B.tv .heroCard { position:absolute; left:96px; right:24px; top:18px; height:282px; border-radius:28px; overflow:hidden; background:var(--c); }
+.B .bd { inset:0; }
+.B.tv .bd { left:22%; }
+.B .bd::after { content:''; position:absolute; inset:0; background: linear-gradient(90deg, var(--c) 0%, color-mix(in srgb, var(--c) 70%, transparent) 22%, transparent 60%), linear-gradient(0deg, color-mix(in srgb, var(--c) 60%, transparent), transparent 40%); }
+.B.tv .hero { position:absolute; left:36px; top:34px; width:420px; }
+.B.tv .logo { font-size:46px; margin-bottom:16px; }
+.B .chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+.B .chip { font:500 13px Roboto; color:var(--onsc); background:color-mix(in srgb, var(--sc) 85%, transparent); padding:5px 11px; border-radius:8px; display:flex; align-items:center; gap:4px; }
+.B .chip svg { width:14px; height:14px; color:var(--p); }
+.B .syn { font:400 17px/1.4 Roboto; color:var(--on); -webkit-line-clamp:3; opacity:.92; }
+.B.tv .rowsWrap { top:308px; bottom:0; }
+.B.tv .row { padding:12px 0 12px 120px; clip-path: inset(0 0 0 106px); }
+.B .row h3 { font:500 18px Roboto; margin:0 0 12px; color:var(--on); }
+.B .track { gap:14px; }
+.B.tv .card { width:112px; height:168px; }
+.B .art { border-radius:14px; }
+.B .art .pt { font-size:14px; }
+.B .card.f { transform:scale(1.06); z-index:3; }
+.B .card.f .art, .B .cw.f .thumb { box-shadow: 0 0 0 3px var(--g), 0 0 0 6px var(--p); }
+.B .cw { width:208px; flex:0 0 auto; position:relative; transition: transform .15s ease-out; }
+.B .cw .thumb { position:relative; height:117px; border-radius:16px; overflow:hidden; background: linear-gradient(160deg, hsl(var(--h) 35% 30%), hsl(var(--h) 30% 12%)); }
+.B .cw .thumb img { width:100%; height:100%; object-fit:cover; }
+.B .cw .prog { left:12px; right:12px; bottom:10px; background:rgba(255,255,255,.28); }
+.B .cw .prog b { background:var(--p); }
+.B .cw .ct { font:500 14px Roboto; margin:10px 2px 2px; color:var(--on); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.B .cw .cs { font:400 12px Roboto; color:var(--v); margin:0 2px; }
+.B.tv .row.cwrow .card, .B .cw.card { height:auto; }
+/* phone */
+.B.ph .appbar { position:absolute; top:28px; left:0; right:0; height:60px; display:flex; align-items:center; justify-content:space-between; padding:0 16px 0 18px; z-index:5; }
+.B.ph .wm { display:flex; align-items:center; gap:6px; font:700 22px Roboto; color:var(--p); letter-spacing:-.02em; }
+.B.ph .wm svg { width:22px; height:22px; }
+.B.ph .ib { width:44px; height:44px; border-radius:22px; background:var(--ch); display:flex; align-items:center; justify-content:center; color:var(--on); }
+.B.ph .heroCard { position:relative; margin:92px 16px 0; height:500px; border-radius:28px; overflow:hidden; background:var(--c); }
+.B.ph .bd::after { background: linear-gradient(0deg, var(--c) 0%, color-mix(in srgb, var(--c) 80%, transparent) 30%, transparent 62%); }
+.B.ph .hero { position:absolute; left:20px; right:20px; bottom:20px; }
+.B.ph .logo { font-size:38px; margin-bottom:12px; }
+.B.ph .chips { margin-bottom:16px; }
+.B.ph .btns { display:flex; gap:10px; }
+.B.ph .btn { flex:1; height:52px; border-radius:26px; font-size:15px; }
+.B.ph .btn.pri { background:var(--p); color:var(--onp); }
+.B.ph .btn.ton { background:var(--sc); color:var(--onsc); }
+.B.ph .row { padding:22px 0 0; }
+.B.ph .row h3 { margin:0 18px 12px; font-size:17px; }
+.B.ph .hscroll { gap:10px; padding:0 16px; }
+.B.ph .card { width:112px; height:168px; }
+.B.ph .cw { width:248px; }
+.B.ph .cw .thumb { height:140px; }
+.B.ph .bar { position:absolute; left:0; right:0; bottom:0; height:80px; display:flex; padding:12px 0 16px; background:var(--c); z-index:10; }
+.B.ph .bar .bi { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; font:500 12px Roboto; color:var(--v); }
+.B.ph .bar .pill { width:64px; height:32px; border-radius:16px; display:flex; align-items:center; justify-content:center; }
+.B.ph .bar .bi.on { color:var(--on); font-weight:700; }
+.B.ph .bar .bi.on .pill { background:var(--sc); color:var(--onsc); }
+
+/* ================= C · SPOTLIGHT ================= */
+.C { --g:#08080A; --m:#9B9BA3; --amber:#FFB627; background:var(--g); }
+.C.tv .bd { inset:0; }
+.C.tv .bd::after { content:''; position:absolute; inset:0; background:
+  linear-gradient(0deg, var(--g) 0%, var(--g) 34%, color-mix(in srgb, var(--g) 55%, transparent) 52%, transparent 76%),
+  linear-gradient(90deg, color-mix(in srgb, var(--g) 92%, transparent) 0%, color-mix(in srgb, var(--g) 40%, transparent) 38%, transparent 62%),
+  linear-gradient(180deg, color-mix(in srgb, var(--g) 70%, transparent) 0%, transparent 22%); }
+.C .topnav { position:absolute; top:22px; left:48px; right:48px; display:flex; align-items:center; gap:6px; z-index:10; }
+.C .wm { display:flex; align-items:center; gap:6px; color:var(--amber); font:700 21px Roboto; letter-spacing:-.02em; margin-right:30px; }
+.C .wm svg { width:22px; height:22px; }
+.C .tab { font:500 16px Roboto; color:rgba(255,255,255,.62); padding:8px 16px; border-radius:20px; position:relative; display:flex; align-items:center; gap:8px; transition: background .12s, color .12s; }
+.C .tab svg { width:20px; height:20px; }
+.C .tab.on { color:#fff; }
+.C .tab.on::after { content:''; position:absolute; left:16px; right:16px; bottom:1px; height:2px; border-radius:1px; background:var(--amber); }
+.C .tab.f { background:#fff; color:var(--g); }
+.C .tab.f::after { display:none; }
+.C.tv .hero { position:absolute; left:48px; top:96px; width:440px; }
+.C.tv .logo { font-size:62px; margin-bottom:16px; }
+.C .meta { font:500 15px Roboto; color:rgba(255,255,255,.72); margin-bottom:12px; }
+.C .meta .rt { color:#fff; font-weight:700; }
+.C .syn { font:400 17px/1.4 Roboto; color:rgba(255,255,255,.82); -webkit-line-clamp:2; }
+.C.tv .rowsWrap { top:296px; bottom:0; }
+.C.tv .row { padding:12px 0 14px 48px; clip-path: inset(0 0 0 38px); }
+.C .row h3 { font:500 17px Roboto; margin:0 0 12px; color:rgba(255,255,255,.88); }
+.C .track { gap:12px; }
+.C.tv .card { width:100px; height:150px; }
+.C .art { border-radius:8px; }
+.C .art .pt { font-size:13px; }
+.C .wide { position:absolute; inset:0; border-radius:8px; overflow:hidden; opacity:0; transition:opacity .25s; background:#111; }
+.C .wide img { width:100%; height:100%; object-fit:cover; }
+.C .wide::after { content:''; position:absolute; inset:0; background:linear-gradient(0deg, rgba(0,0,0,.8), transparent 60%); }
+.C .wide .wl { position:absolute; left:14px; bottom:12px; right:14px; z-index:2; font-size:24px; line-height:.95; }
+.C.tv .card.f { width:267px; }
+.C.tv .card.f .wide { opacity:1; }
+.C.tv .card.f::before, .C.tv .lcard.f::before { content:''; position:absolute; inset:-4px; border:2px solid #fff; border-radius:11px; z-index:4; }
+.C .lcard { width:200px; height:112px; }
+.C .lcard .art { border-radius:8px; }
+.C .lcard .prog b { background:var(--amber); }
+.C .lcard .lt { position:absolute; left:10px; bottom:18px; z-index:2; font:700 13px Roboto; text-shadow:0 1px 6px rgba(0,0,0,.7); }
+.C .lcard .lt small { display:block; font:500 11px Roboto; color:rgba(255,255,255,.75); margin-top:2px; }
+.C.tv .lcard.f { transform:scale(1.06); z-index:3; }
+.C.tv .lcard { flex:0 0 200px; }
+/* phone */
+.C.ph { background: radial-gradient(130% 55% at 50% 4%, hsl(var(--hh) 50% 30%) 0%, hsl(var(--hh) 40% 12%) 45%, var(--g) 75%); }
+.C.ph .appbar { display:flex; align-items:center; justify-content:space-between; padding:38px 18px 0; }
+.C.ph .appbar .wm { margin:0; font-size:22px; }
+.C.ph .appbar svg { color:#fff; }
+.C.ph .chipsTop { display:flex; gap:8px; padding:16px 18px 0; }
+.C.ph .tc { font:500 14px Roboto; padding:8px 16px; border-radius:18px; border:1px solid rgba(255,255,255,.35); color:#fff; }
+.C.ph .poster { position:relative; margin:18px auto 0; width:316px; height:450px; border-radius:14px; overflow:hidden; box-shadow: 0 24px 48px -12px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.08); }
+.C.ph .poster img { width:100%; height:100%; object-fit:cover; }
+.C.ph .poster::after { content:''; position:absolute; inset:0; background:linear-gradient(0deg, rgba(0,0,0,.92) 0%, rgba(0,0,0,.4) 34%, transparent 56%); }
+.C.ph .pin { position:absolute; left:18px; right:18px; bottom:18px; z-index:2; text-align:center; }
+.C.ph .logo { font-size:42px; margin-bottom:10px; }
+.C.ph .meta { justify-content:center; font-size:13px; margin-bottom:16px; }
+.C.ph .btns { display:flex; gap:10px; }
+.C.ph .btn { flex:1; height:46px; border-radius:6px; }
+.C.ph .btn.pri { background:#fff; color:#08080A; }
+.C.ph .btn.sec { background:rgba(255,255,255,.18); color:#fff; }
+.C.ph .row { padding:24px 0 0; }
+.C.ph .row h3 { margin:0 18px 10px; font-size:16px; font-weight:700; }
+.C.ph .hscroll { gap:8px; padding:0 16px; }
+.C.ph .card { width:108px; height:162px; }
+.C.ph .lcard { flex:0 0 220px; height:124px; }
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>Fastie home <span>· three directions, TV and phone</span></h1>
+  <div class="tabs" role="tablist">
+    <button role="tab" data-d="A" aria-selected="true">A · Marquee</button>
+    <button role="tab" data-d="B">B · Tonal</button>
+    <button role="tab" data-d="C">C · Spotlight</button>
+  </div>
+</div>
+
+<section class="dir on" id="A">
+  <div class="intro">
+    <div>
+      <h2>A · Marquee</h2>
+      <p>The direction DESIGN.md already describes, finished properly. A near-black ground, the focused title's backdrop behind deeper scrims, white as the only focus colour, and amber only for progress, the bolt and the current page.</p>
+    </div>
+    <div>
+      <ul>
+        <li><b>Focus ring with a gap</b>: the white outline sits 2dp off the poster, and posters without focus dim slightly, so the focused one is easy to spot from across the room.</li>
+        <li><b>Rail opens on focus</b>: press ← from the first poster and the rail widens to show labels, the way big-screen apps do it.</li>
+        <li>Bigger title art, a meta line with a rating badge, and a three-layer scrim so the type stays readable over bright art.</li>
+      </ul>
+      <p class="cost">Code cost: small. Mostly the focus drawable in Posters.kt, the scrim in Ui.kt and the rail expand in MainActivity.kt. It means rolling back the Material You colours in your uncommitted changes.</p>
+    </div>
+  </div>
+  <div class="stage">
+    <div><p class="label">Android TV · 960×540 dp <i>Click the screen, then use the arrow keys</i></p><div class="fit tvfit" data-w="960" data-h="540"><div class="screen A tv"></div></div></div>
+    <div><p class="label">Phone · 412×892 dp <i>Scrolls</i></p><div class="fit phone" data-w="412" data-h="892"><div class="screen A ph"></div></div></div>
+  </div>
+</section>
+
+<section class="dir" id="B">
+  <div class="intro">
+    <div>
+      <h2>B · Tonal</h2>
+      <p>Material 3 Expressive with dynamic colour, which is where your uncommitted code is heading. Surfaces take a warm tint from the wallpaper on Android 12 and later, with amber as the fallback seed. The hero becomes a rounded card, and navigation uses pill indicators.</p>
+    </div>
+    <div>
+      <ul>
+        <li><b>Continue Watching as wide cards</b> with the episode and time left under each one, so you can tell what you're resuming without opening it.</li>
+        <li>Meta shown as tonal chips. Play is a filled pill and My List a tonal pill. Posters get softer 14dp corners.</li>
+        <li>Focus is a primary-colour ring with a gap. It feels native next to Google TV and Pixel apps.</li>
+      </ul>
+      <p class="cost">Code cost: medium. It finishes the work in progress (C tokens, Shape, SPRING), adds a landscape card type to Posters.kt, and DESIGN.md gets rewritten around it.</p>
+    </div>
+  </div>
+  <div class="stage">
+    <div><p class="label">Android TV · 960×540 dp <i>Click the screen, then use the arrow keys</i></p><div class="fit tvfit" data-w="960" data-h="540"><div class="screen B tv"></div></div></div>
+    <div><p class="label">Phone · 412×892 dp <i>Scrolls</i></p><div class="fit phone" data-w="412" data-h="892"><div class="screen B ph"></div></div></div>
+  </div>
+</section>
+
+<section class="dir" id="C">
+  <div class="intro">
+    <div>
+      <h2>C · Spotlight</h2>
+      <p>The most cinematic of the three. On TV the focused title's backdrop fills the whole screen, the rail is replaced by text tabs along the top so posters get the full width, and the focused poster widens into a 16:9 card showing its own art.</p>
+    </div>
+    <div>
+      <ul>
+        <li><b>Phone hero as a floating poster</b> on a glow tinted from the artwork, with Play and My List built into the card.</li>
+        <li>Continue Watching uses landscape stills with the episode on them, and the rows sit lower and quieter.</li>
+        <li>True-black ground, with amber kept to progress, the wordmark and the active tab.</li>
+      </ul>
+      <p class="cost">Code cost: medium to high. It needs a width animation on the focused RecyclerView item, a top tab bar for TV, and an average colour from each poster (scaling the bitmap to 1×1 is enough, no new library).</p>
+    </div>
+  </div>
+  <div class="stage">
+    <div><p class="label">Android TV · 960×540 dp <i>Click the screen, then use the arrow keys (↑ reaches the tabs)</i></p><div class="fit tvfit" data-w="960" data-h="540"><div class="screen C tv"></div></div></div>
+    <div><p class="label">Phone · 412×892 dp <i>Scrolls</i></p><div class="fit phone" data-w="412" data-h="892"><div class="screen C ph"></div></div></div>
+  </div>
+</section>
+
+<script>
+const I = {
+  home:'M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z',
+  search:'M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z',
+  list:'M17,3H7A2,2 0 0,0 5,5V21L12,18L19,21V5C19,3.89 18.1,3 17,3Z',
+  settings:'M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z',
+  play:'M8,5.14V19.14L19,12.14L8,5.14Z',
+  plus:'M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z',
+  bolt:'M7,2V13H10V22L17,10H13L17,2H7Z',
+  star:'M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z',
+};
+const svg = (n, cls='') => `<svg class="${cls}" viewBox="0 0 24 24"><path d="${I[n]}"/></svg>`;
+const NAV = [['search','Search'],['home','Home'],['list','My List'],['settings','Settings']];
+
+// Fictional titles; art is placeholder photography from picsum.
+const F = {
+  bebas:"400 1em 'Bebas Neue'", play:"900 1em 'Playfair Display'", playi:"italic 700 1em 'Playfair Display'", archivo:"400 .8em 'Archivo Black'",
+  serif:"400 1em 'DM Serif Display'", oswald:"600 .9em Oswald", anton:"400 1em Anton", corm:"italic 700 1.05em 'Cormorant Garamond'", rob:"900 .85em Roboto",
+};
+const ITEMS = [
+  {t:'The Long Quiet', y:2024, g:['Drama','Mystery'], r:'7.8', d:'2h 08m', tag:'16+', f:'play', h:30, s:'A lighthouse keeper on a fogbound island starts receiving radio calls from a ship that sank forty years ago, and every call knows something about her that nobody else does.'},
+  {t:'Saltwater', y:2023, g:['Thriller'], r:'7.1', d:'1h 52m', tag:'13+', f:'bebas', h:200, s:'Two estranged brothers run one last smuggling job along the coast, a week before the harbour closes for good.'},
+  {t:'Northbound', y:2025, g:['Adventure','Drama'], r:'8.2', d:'2 seasons', tag:'13+', f:'oswald', h:210, s:'A night train crosses a frozen country in eleven days. Each episode follows one passenger and the reason they could not stay behind.'},
+  {t:'Glass Harbor', y:2022, g:['Crime','Drama'], r:'7.6', d:'3 seasons', tag:'18+', f:'serif', h:190, s:'A port city runs on favours. When the harbourmaster disappears, his daughter inherits every one he owed.'},
+  {t:'Ember Season', y:2024, g:['Romance','Drama'], r:'6.9', d:'1h 47m', tag:'13+', f:'corm', h:20, s:'A wildfire crew and the town they are sent to save spend one long summer working out who they are when the smoke clears.'},
+  {t:'The Cartographer', y:2021, g:['Sci-Fi'], r:'7.9', d:'2h 14m', tag:'13+', f:'archivo', h:260, s:'A mapmaker discovers that the coastline she charts each morning has changed overnight, and that only she can see it.'},
+  {t:'Low Tide', y:2023, g:['Comedy'], r:'7.0', d:'1 season', tag:'7+', f:'rob', h:180, s:'A failing seaside café, three generations of one family and a summer of very bad business ideas.'},
+  {t:'Paper Moons', y:2020, g:['Animation','Family'], r:'8.0', d:'1h 36m', tag:'All', f:'playi', h:240, s:'A girl who folds paper animals finds that one of them has walked out of her window to look for the moon.'},
+  {t:'Signal Fire', y:2025, g:['Action','Thriller'], r:'7.3', d:'2h 01m', tag:'16+', f:'anton', h:10, s:'Cut off by a storm, a mountain rescue team has one night to bring down the survivors of a crash nobody reported.'},
+  {t:'Kestrel', y:2022, g:['Drama'], r:'7.7', d:'4 seasons', tag:'16+', f:'bebas', h:40, s:'A falconer, a failing estate and a family that would rather sell everything than admit it needs her.'},
+  {t:'Winter Line', y:2024, g:['War','Drama'], r:'8.1', d:'2h 26m', tag:'16+', f:'oswald', h:215, s:'Six soldiers hold a mountain pass through the last winter of a war that has already ended without them.'},
+  {t:'Halfway House', y:2023, g:['Horror'], r:'6.6', d:'1h 39m', tag:'18+', f:'serif', h:0, s:'A roadside motel books exactly one guest each night, and none of them check out the way they checked in.'},
+  {t:'Copper Sky', y:2021, g:['Western'], r:'7.2', d:'2 seasons', tag:'16+', f:'anton', h:28, s:'A mining town in the desert elects its first sheriff in thirty years, and it is the woman who robbed its bank.'},
+  {t:'The Ninth Floor', y:2025, g:['Mystery','Thriller'], r:'7.5', d:'1 season', tag:'16+', f:'archivo', h:230, s:'Every tenant of an old apartment block remembers a ninth floor. The building has eight.'},
+  {t:'Driftwood', y:2022, g:['Documentary'], r:'8.4', d:'1h 31m', tag:'All', f:'play', h:170, s:'One tree, washed from a riverbank to the open ocean, followed across four years and three continents.'},
+];
+ITEMS.forEach((it, i) => { it.seed = 'fastie' + (i * 7 + 3); it.type = /season/.test(it.d) ? 'series' : 'movie'; });
+const poster = (it, w=240, h=360) => `https://picsum.photos/seed/${it.seed}/${w}/${h}`;
+const still = (it, w=1280, h=720) => `https://picsum.photos/seed/${it.seed}/${w}/${h}`;
+const ROWS = [
+  {title:'Continue Watching', cw:true, items:[[2,.42,'S1 · E4','31 min left'],[3,.78,'S3 · E2','11 min left'],[5,.2,'','1h 46m left'],[9,.6,'S2 · E7','19 min left']]},
+  {title:'Popular Movies', items:[0,1,4,5,7,8,10,11,14]},
+  {title:'Popular Series', items:[2,3,6,9,12,13]},
+  {title:'Featured Movies', items:[10,14,8,0,11,1,4]},
+];
+const logoHTML = (it, cls='logo') => `<div class="${cls}" style="font:${F[it.f]};font-size:inherit">${it.t}</div>`;
+const metaParts = (it) => [it.y, it.g.join(', '), it.d];
+const art = (it, extra='') => `<div class="art" style="--h:${it.h}"><img loading="lazy" alt="" src="${poster(it)}" onerror="this.remove()"><span class="pt" style="font:${F[it.f]};font-size:15px">${it.t}</span></div>${extra}`;
+
+function backdrop(cls, it) {
+  return `<div class="bd ${cls}"><img class="l1" alt="" src="${still(it)}"><img class="l2" alt="" style="opacity:0"></div>`;
+}
+function setHero(root, it) {
+  const logo = root.querySelector('.hero .logo');
+  if (logo) { logo.style.font = F[it.f]; logo.style.fontSize = ''; logo.textContent = it.t; }
+  const meta = root.querySelector('.hero .meta'); if (meta) meta.innerHTML = root._meta(it);
+  const chips = root.querySelector('.hero .chips'); if (chips) chips.innerHTML = root._meta(it);
+  const syn = root.querySelector('.hero .syn'); if (syn) syn.textContent = it.s;
+  // Crossfade: the incoming still only replaces the current one once it has loaded.
+  const bd = root.querySelector('.bd'); if (!bd) return;
+  const [a, b] = bd.querySelectorAll('img');
+  const front = a.style.opacity === '0' ? b : a, back = front === a ? b : a;
+  if (front.src === still(it)) return;
+  back.onload = () => { back.style.opacity = '1'; front.style.opacity = '0'; };
+  back.src = still(it);
+}
+
+/* ---- A ---- */
+const metaA = it => `<span>${it.y}</span><span class="tag">${it.tag}</span><span>${it.g.join(' · ')}</span><span class="dot"></span><span>${it.d}</span><span class="dot"></span><span class="rt">${svg('star')}${it.r}</span>`;
+function rowsHTML(prefix, cardFn, cwFn) {
+  return ROWS.map(r => `<div class="row ${r.cw ? 'cwrow' : ''}"><h3>${r.title}</h3><div class="${prefix}">${
+    r.items.map(x => r.cw ? cwFn(ITEMS[x[0]], x) : cardFn(ITEMS[x])).join('')}</div></div>`).join('');
+}
+const cardA = it => `<div class="card" data-i="${ITEMS.indexOf(it)}">${art(it)}</div>`;
+const cwPosterA = (it, x) => `<div class="card" data-i="${ITEMS.indexOf(it)}">${art(it)}<div class="prog"><b style="width:${Math.max(4, x[1]*100)}%"></b></div></div>`;
+function buildA(tv, ph) {
+  tv._meta = metaA; ph._meta = metaA;
+  const f = ITEMS[0];
+  tv.innerHTML = `${backdrop('', f)}
+    <div class="rail">${svg('bolt','bolt')}${NAV.map((n,i) => `<div class="ni ${i==1?'on':''}">${svg(n[0])}<span>${n[1]}</span></div>`).join('')}</div>
+    <div class="hero">${logoHTML(f)}<div class="meta">${metaA(f)}</div><div class="syn">${f.s}</div></div>
+    <div class="rowsWrap"><div class="rowsIn">${rowsHTML('track', cardA, cwPosterA)}</div></div>`;
+  ph.innerHTML = `<div class="status"><span>9:41</span><span><i></i></span></div><div class="pscroll">
+    <div class="hero-ph">${backdrop('', f)}<div class="wm">fastie</div>
+      <div class="hero">${logoHTML(f)}<div class="meta">${metaA(f)}</div><div class="syn">${f.s}</div>
+      <div class="btns"><div class="btn pri">${svg('play')}Play</div><div class="btn">${svg('plus')}My List</div></div></div></div>
+    ${rowsHTML('hscroll', cardA, cwPosterA)}<div style="height:96px"></div></div>
+    <div class="bar">${[1,0,2,3].map(i => NAV[i]).map((n,i) => `<div class="bi ${i==0?'on':''}">${svg(n[0])}${n[1]}</div>`).join('')}</div>`;
+}
+
+/* ---- B ---- */
+const metaB = it => `<span class="chip">${it.y}</span><span class="chip">${it.tag}</span>${it.g.map(g => `<span class="chip">${g}</span>`).join('')}<span class="chip">${it.d}</span><span class="chip">${svg('star')}${it.r}</span>`;
+const cardB = cardA;
+const cwB = (it, x) => `<div class="cw card" data-i="${ITEMS.indexOf(it)}"><div class="thumb" style="--h:${it.h}"><img loading="lazy" alt="" src="${still(it, 480, 270)}" onerror="this.remove()"><div class="prog"><b style="width:${Math.max(4, x[1]*100)}%"></b></div></div><div class="ct">${it.t}</div><div class="cs">${x[2] ? x[2] + ' · ' : ''}${x[3]}</div></div>`;
+function buildB(tv, ph) {
+  tv._meta = metaB; ph._meta = metaB;
+  const f = ITEMS[0];
+  tv.innerHTML = `<div class="rail">${svg('bolt','bolt')}${NAV.map((n,i) => `<div class="ni ${i==1?'on':''}"><div class="pill">${svg(n[0])}</div>${n[1]}</div>`).join('')}</div>
+    <div class="heroCard">${backdrop('', f)}<div class="hero">${logoHTML(f)}<div class="chips">${metaB(f)}</div><div class="syn">${f.s}</div></div></div>
+    <div class="rowsWrap"><div class="rowsIn">${rowsHTML('track', cardB, cwB)}</div></div>`;
+  ph.innerHTML = `<div class="status"><span>9:41</span><span><i></i></span></div><div class="pscroll">
+    <div class="appbar"><div class="wm">${svg('bolt')}fastie</div><div class="ib">${svg('search')}</div></div>
+    <div class="heroCard">${backdrop('', f)}<div class="hero">${logoHTML(f)}<div class="chips">${metaB(f)}</div>
+      <div class="btns"><div class="btn pri">${svg('play')}Play</div><div class="btn ton">${svg('plus')}My List</div></div></div></div>
+    ${rowsHTML('hscroll', cardB, cwB)}<div style="height:100px"></div></div>
+    <div class="bar">${[1,0,2,3].map(i => NAV[i]).map((n,i) => `<div class="bi ${i==0?'on':''}"><div class="pill">${svg(n[0])}</div>${n[1]}</div>`).join('')}</div>`;
+}
+
+/* ---- C ---- */
+const metaC = it => `<span class="rt">★ ${it.r}</span><span>${it.y}</span><span class="dot"></span><span>${it.g.join(', ')}</span><span class="dot"></span><span>${it.d}</span><span class="dot"></span><span>${it.tag}</span>`;
+const cardC = it => `<div class="card" data-i="${ITEMS.indexOf(it)}">${art(it)}<div class="wide"><img loading="lazy" alt="" src="${still(it, 540, 304)}"><div class="wl" style="font:${F[it.f]};font-size:24px">${it.t}</div></div></div>`;
+const cwC = (it, x) => `<div class="card lcard" data-i="${ITEMS.indexOf(it)}"><div class="art" style="--h:${it.h}"><img loading="lazy" alt="" src="${still(it, 480, 270)}" onerror="this.remove()"></div><div class="lt">${it.t}<small>${x[2] ? x[2] + ' · ' : ''}${x[3]}</small></div><div class="prog"><b style="width:${Math.max(4, x[1]*100)}%"></b></div></div>`;
+const cardCph = it => `<div class="card" data-i="${ITEMS.indexOf(it)}">${art(it)}</div>`;
+function buildC(tv, ph) {
+  tv._meta = metaC; ph._meta = metaC;
+  const f = ITEMS[0];
+  tv.innerHTML = `${backdrop('', f)}
+    <div class="topnav"><div class="wm">${svg('bolt')}fastie</div>${NAV.map((n,i) => `<div class="tab ni ${i==1?'on':''}">${i==0 ? svg('search') : ''}${i==0 ? '' : n[1]}</div>`).join('')}</div>
+    <div class="hero">${logoHTML(f)}<div class="meta">${metaC(f)}</div><div class="syn">${f.s}</div></div>
+    <div class="rowsWrap"><div class="rowsIn">${rowsHTML('track', cardC, cwC)}</div></div>`;
+  const p = ITEMS[5];
+  ph.style.setProperty('--hh', p.h);
+  ph.innerHTML = `<div class="status"><span>9:41</span><span><i></i></span></div><div class="pscroll">
+    <div class="appbar"><div class="wm">${svg('bolt')}fastie</div>${svg('search')}</div>
+    <div class="poster"><img alt="" src="${poster(p, 632, 900)}"><div class="pin">${logoHTML(p)}<div class="meta">${metaC(p)}</div>
+      <div class="btns"><div class="btn pri">${svg('play')}Play</div><div class="btn sec">${svg('plus')}My List</div></div></div></div>
+    ${rowsHTML('hscroll', cardCph, cwC)}<div style="height:96px"></div></div>
+    <div class="bar">${[1,0,2,3].map(i => NAV[i]).map((n,i) => `<div class="bi ${i==0?'on':''}">${svg(n[0])}${n[1]}</div>`).join('')}</div>`;
+}
+
+/* ---- D-pad simulation for the TV screens ---- */
+function nav(tv, { railLeft }) {
+  const rows = [...tv.querySelectorAll('.row')];
+  const inner = tv.querySelector('.rowsIn');
+  const navs = [...tv.querySelectorAll('.ni')];
+  const st = { r:0, c:rows.map(() => 0), rail:-1 };
+  let t;
+  function paint() {
+    tv.querySelectorAll('.card.f').forEach(e => e.classList.remove('f'));
+    navs.forEach((e, i) => e.classList.toggle('f', i === st.rail));
+    tv.classList.toggle('inrail', st.rail >= 0);
+    rows.forEach((row, ri) => {
+      const cards = row.querySelectorAll('.card');
+      const c = st.c[ri];
+      if (ri === st.r && st.rail < 0) cards[c].classList.add('f');
+      // Focus stays in the first column; the row slides under it.
+      row.querySelector('.track').style.transform = `translateX(${cards[0].offsetLeft - cards[c].offsetLeft}px)`;
+    });
+    inner.style.transform = `translateY(${-rows[st.r].offsetTop}px)`;
+    if (st.rail < 0) {
+      const it = ITEMS[+rows[st.r].querySelectorAll('.card')[st.c[st.r]].dataset.i];
+      clearTimeout(t); t = setTimeout(() => setHero(tv, it), 220);
+    }
+  }
+  tv._key = k => {
+    const n = rows[st.r].querySelectorAll('.card').length;
+    if (st.rail >= 0) {
+      const [prev, next, out] = railLeft ? ['ArrowUp', 'ArrowDown', 'ArrowRight'] : ['ArrowLeft', 'ArrowRight', 'ArrowDown'];
+      if (k === prev) st.rail = Math.max(0, st.rail - 1);
+      else if (k === next) st.rail = Math.min(navs.length - 1, st.rail + 1);
+      else if (k === out) st.rail = -1;
+    } else if (k === 'ArrowRight') st.c[st.r] = Math.min(n - 1, st.c[st.r] + 1);
+    else if (k === 'ArrowLeft') { if (st.c[st.r] > 0) st.c[st.r]--; else if (railLeft) st.rail = 1; }
+    else if (k === 'ArrowDown') st.r = Math.min(rows.length - 1, st.r + 1);
+    else if (k === 'ArrowUp') { if (st.r > 0) st.r--; else if (!railLeft) st.rail = 1; }
+    paint();
+  };
+  tv.addEventListener('click', e => {
+    const card = e.target.closest('.card'); if (!card) return;
+    const ri = rows.indexOf(card.closest('.row'));
+    st.rail = -1; st.r = ri; st.c[ri] = [...rows[ri].querySelectorAll('.card')].indexOf(card); paint();
+  });
+  paint();
+}
+
+const S = s => document.querySelector(s);
+buildA(S('.A.tv'), S('.A.ph')); buildB(S('.B.tv'), S('.B.ph')); buildC(S('.C.tv'), S('.C.ph'));
+nav(S('.A.tv'), { railLeft:true }); nav(S('.B.tv'), { railLeft:true }); nav(S('.C.tv'), { railLeft:false });
+
+let active = null;
+document.querySelectorAll('.tvfit').forEach(f => f.addEventListener('click', () => {
+  document.querySelectorAll('.tvfit').forEach(x => x.classList.remove('active'));
+  f.classList.add('active'); active = f.querySelector('.screen');
+}));
+document.addEventListener('keydown', e => {
+  if (!active || !e.key.startsWith('Arrow') || !active.closest('.dir').classList.contains('on')) return;
+  e.preventDefault(); active._key(e.key);
+});
+
+function fit() {
+  document.querySelectorAll('.dir.on .fit').forEach(f => {
+    const w = +f.dataset.w, h = +f.dataset.h, s = f.clientWidth / w, sc = f.querySelector('.screen');
+    sc.style.width = w + 'px'; sc.style.height = h + 'px'; sc.style.transform = `scale(${s})`;
+    f.style.height = h * s + 'px';
+  });
+}
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', x === b));
+  document.querySelectorAll('.dir').forEach(d => d.classList.toggle('on', d.id === b.dataset.d));
+  try { localStorage.setItem('fastie-dir', b.dataset.d); } catch (e) {}
+  fit();
+  // Rows were laid out while hidden; repaint focus offsets now they have size.
+  document.querySelectorAll(`#${b.dataset.d} .tv`).forEach(tv => tv._key(''));
+}));
+addEventListener('resize', fit);
+document.fonts.ready.then(fit);
+fit();
+try { const d = localStorage.getItem('fastie-dir'); if (d) document.querySelector(`.tabs [data-d=${d}]`).click(); } catch (e) {}
+</script>
+</body>
+</html>

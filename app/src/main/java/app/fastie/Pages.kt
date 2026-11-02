@@ -17,7 +17,7 @@ import android.widget.ScrollView
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
-private fun MainActivity.side() = dp(if (isTv) 40 else 16)
+private fun MainActivity.side() = dp(if (isTv) 48 else 16)
 
 class SearchPage(private val a: MainActivity) {
     val view = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
@@ -38,12 +38,8 @@ class SearchPage(private val a: MainActivity) {
             textSize = if (a.isTv) 20f else 17f
             isSingleLine = true
             imeOptions = EditorInfo.IME_ACTION_SEARCH
-            setPadding(a.dp(24), a.dp(16), a.dp(24), a.dp(16))
-            background = android.graphics.drawable.StateListDrawable().apply {
-                // Material search bar: a full pill in the high container color.
-                addState(intArrayOf(android.R.attr.state_focused), rounded(C.containerHigh, a.dp(Shape.FULL).toFloat(), a.dp(2), C.primary))
-                addState(intArrayOf(), rounded(C.containerHigh, a.dp(Shape.FULL).toFloat()))
-            }
+            setPadding(a.dp(18), a.dp(14), a.dp(18), a.dp(14))
+            background = a.fieldBackground()
             setCompoundDrawablesRelativeWithIntrinsicBounds(a.icon(R.drawable.ic_search).apply { setTint(C.variant) }, null, null, null)
             compoundDrawablePadding = a.dp(12)
             addTextChangedListener(object : TextWatcher {
@@ -124,7 +120,7 @@ class LibraryPage(private val a: MainActivity) {
         view.addView(a.text(T.DISPLAY, s = "My List"), lp().apply { setMargins(s, a.dp(if (a.isTv) 32 else 16), s, a.dp(8)) })
         view.addView(empty, lp().apply { setMargins(s, a.dp(12), s, 0) })
         val cell = a.posterWidth() + a.dp(if (a.isTv) 14 else 8)
-        val available = a.resources.displayMetrics.widthPixels - (if (a.isTv) a.dp(MainActivity.RAIL) else 0) - 2 * s
+        val available = a.resources.displayMetrics.widthPixels - 2 * s
         grid.layoutManager = GridLayoutManager(a, (available / cell).coerceAtLeast(3))
         grid.clipToPadding = false
         grid.setPadding(s - a.dp(6), 0, s - a.dp(6), a.dp(120))
@@ -196,7 +192,6 @@ class SettingsPage(private val a: MainActivity) {
         row("Fastie ${a.packageManager.getPackageInfo(a.packageName, 0).versionName}",
             "Plays what your addons provide. Fastie hosts no content and isn't affiliated with Nuvio or Stremio.")
 
-        groupRows(col)
         if (keep >= 0) col.getChildAt(keep.coerceAtMost(col.childCount - 1))?.requestFocus()
     }
 
@@ -235,13 +230,13 @@ class SettingsPage(private val a: MainActivity) {
     }
 }
 
-/** A Material-style snackbar: one line at the bottom, gone after a few seconds. */
+/** A snackbar: the one light surface, at the bottom, gone after a few seconds. */
 fun MainActivity.say(message: String) {
     val root = window.decorView as FrameLayout
     root.findViewWithTag<View>("snack")?.let(root::removeView)
     val bar = text(T.LABEL, C.onPrimary, lines = 2, s = message).apply {
         tag = "snack"
-        background = rounded(C.inverse, dp(Shape.L).toFloat())
+        background = rounded(C.inverse, dp(Shape.S).toFloat())
         setTextColor(C.inverseOn)
         setPadding(dp(18), dp(14), dp(18), dp(14))
         elevation = dp(6).toFloat()

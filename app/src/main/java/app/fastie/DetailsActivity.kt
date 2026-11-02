@@ -23,8 +23,8 @@ class DetailsActivity : Activity() {
     private val header by lazy { LinearLayout(this).apply { orientation = LinearLayout.VERTICAL } }
     private val logo by lazy { ImageView(this).apply { scaleType = ImageView.ScaleType.FIT_START } }
     private val title by lazy { text(T.DISPLAY, lines = 2) }
-    private val meta by lazy { text(T.META, C.variant, lines = 2) }
-    private val desc by lazy { text(T.BODY, C.variant, lines = if (isTv) 4 else 8) }
+    private val meta by lazy { text(T.META, C.alpha(C.onSurface, 0.72f), lines = 2) }
+    private val desc by lazy { text(T.BODY, C.alpha(C.onSurface, 0.82f), lines = if (isTv) 3 else 8) }
     private val seasons by lazy { LinearLayout(this) }
     private lateinit var play: TextView
     private lateinit var list: TextView
@@ -37,12 +37,18 @@ class DetailsActivity : Activity() {
         edgeToEdge()
         item = Item.from(JSONObject(intent.getStringExtra("item")!!))
         val root = FrameLayout(this).apply { setBackgroundColor(C.ground) }
-        val layers = backdrop(root, if (isTv) 0.8f else 0.5f)
+        // As on Home: on TV the art fills the screen behind the title.
+        val layers = backdrop(root, if (isTv) 1f else 0.55f, bottom = if (isTv) 0.75f else 0.55f)
         val w = resources.displayMetrics.widthPixels
         val h = resources.displayMetrics.heightPixels
-        val side = dp(if (isTv) 56 else 16)
+        val side = dp(if (isTv) 48 else 16)
 
-        header.addView(logo, lp(if (isTv) (w * 0.3f).toInt() else (w * 0.6f).toInt(), dp(if (isTv) 104 else 80)).apply { bottomMargin = dp(14) })
+        // The logo keeps its own aspect up to this box, so short logos don't leave a gap above the meta.
+        logo.adjustViewBounds = true
+        logo.maxWidth = if (isTv) (w * 0.36f).toInt() else (w * 0.66f).toInt()
+        logo.maxHeight = dp(if (isTv) 104 else 80)
+        header.addView(logo, lp(-2, -2).apply { bottomMargin = dp(16) })
+        if (isTv) title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 44f)
         header.addView(title, lp().apply { bottomMargin = dp(10) })
         header.addView(meta, lp().apply { bottomMargin = dp(12) })
         header.addView(desc, lp(if (isTv) (w * 0.45f).toInt() else -1, -2))
@@ -56,7 +62,7 @@ class DetailsActivity : Activity() {
             isHorizontalScrollBarEnabled = false
             addView(seasons)
         }, lp().apply { topMargin = dp(26) })
-        header.setPadding(side, if (isTv) (h * 0.1f).toInt() else (h * 0.32f).toInt(), side, dp(8))
+        header.setPadding(side, if (isTv) dp(64) else (h * 0.32f).toInt(), side, dp(8))
         header.layoutParams = RecyclerView.LayoutParams(-1, -2)
 
         adapter = EpisodeAdapter()
@@ -107,10 +113,10 @@ class DetailsActivity : Activity() {
 
     private fun bind(i: Item) {
         title.text = i.name
-        meta.text = listOfNotNull(i.metaLine.ifBlank { null }, i.rating?.let { "IMDb $it" }).joinToString("  ·  ")
+        meta.text = metaText(i, meta.textSize)
         desc.text = i.description
         val logoUrl = i.logo ?: if (i.id.startsWith("tt")) "https://images.metahub.space/logo/medium/${i.id}/img" else null
-        Images.load(logo, logoUrl, (resources.displayMetrics.widthPixels * 0.4f).toInt(), alpha = true) { ok ->
+        Images.load(logo, logoUrl, logo.maxWidth, alpha = true) { ok ->
             logo.visibility = if (ok) View.VISIBLE else View.GONE
             title.visibility = if (ok) View.GONE else View.VISIBLE
         }
@@ -121,33 +127,10 @@ class DetailsActivity : Activity() {
         seasons.removeAllViews()
         if (numbers.isNotEmpty()) {
             if (season !in numbers) season = resumeTarget()?.season ?: numbers.first()
-            numbers.forEach { n -> seasons.addView(chip(if (n == 0) "Specials" else "Season $n", n), lp(-2, -2).apply { marginEnd = dp(8) }) }
+            numbers.forEach { n -> seasons.addView(chip(if (n == 0) "Specials" else "Season $n") { showSeason(n) }.apply { tag = n }, lp(-2, -2).apply { marginEnd = dp(8) }) }
             showSeason(season)
         }
         updatePlay()
-    }
-
-    private fun chip(label: String, n: Int) = text(T.LABEL, s = label).apply {
-        isFocusable = true
-        isClickable = true
-        gravity = Gravity.CENTER
-        minHeight = dp(if (isTv) 40 else 44)
-        setPadding(dp(16), dp(8), dp(16), dp(8))
-        // Material filter chip: 8dp corners, a tonal fill when selected, primary when focused.
-        val r = dp(Shape.S).toFloat()
-        background = StateListDrawable().apply {
-            addState(intArrayOf(android.R.attr.state_focused), rounded(C.primary, r))
-            addState(intArrayOf(android.R.attr.state_selected), rounded(C.secondaryContainer, r))
-            addState(intArrayOf(), rounded(Color.TRANSPARENT, r, dp(1), C.outlineVariant))
-        }
-        setTextColor(android.content.res.ColorStateList(
-            arrayOf(intArrayOf(android.R.attr.state_focused), intArrayOf(android.R.attr.state_selected), intArrayOf()),
-            intArrayOf(C.onPrimary, C.onSecondaryContainer, C.variant)))
-        setOnFocusChangeListener { v, has ->
-            v.animate().scaleX(if (has) 1.06f else 1f).scaleY(if (has) 1.06f else 1f).setInterpolator(SPRING).setDuration(SPRING.duration).start()
-        }
-        tag = n
-        setOnClickListener { showSeason(n) }
     }
 
     private fun showSeason(n: Int) {
@@ -207,38 +190,33 @@ class DetailsActivity : Activity() {
             if (type == 1) return object : RecyclerView.ViewHolder(header) {}
             val ctx = parent.context
             val side = dp(if (isTv) 48 else 8)
-            val r = dp(Shape.XL).toFloat()
+            val r = dp(Shape.M).toFloat()
             val row = LinearLayout(ctx).apply {
                 gravity = Gravity.CENTER_VERTICAL
                 isFocusable = true
                 isClickable = true
                 setPadding(dp(10), dp(10), dp(16), dp(10))
+                // Imagery plus text: a raised fill and a 2dp white ring under focus; the type stays white.
                 background = StateListDrawable().apply {
-                    addState(intArrayOf(android.R.attr.state_focused), rounded(C.primaryContainer, r))
+                    addState(intArrayOf(android.R.attr.state_focused), rounded(C.containerHigh, r, dp(2), C.onSurface))
                     addState(intArrayOf(android.R.attr.state_pressed), rounded(C.containerHigh, r))
                     addState(intArrayOf(), rounded(Color.TRANSPARENT, r))
-                }
-                setOnFocusChangeListener { v, has ->
-                    v.animate().scaleX(if (has) 1.03f else 1f).scaleY(if (has) 1.03f else 1f).setInterpolator(SPRING).setDuration(SPRING.duration).start()
                 }
                 layoutParams = RecyclerView.LayoutParams(if (isTv) (resources.displayMetrics.widthPixels * 0.62f).toInt() else -1, -2)
                     .apply { setMargins(side, 0, side, dp(4)) }
             }
             val tw = dp(if (isTv) 176 else 132)
             val thumb = FrameLayout(ctx).apply {
-                background = rounded(C.container, dp(Shape.L).toFloat())
-                outlineProvider = MorphOutline(dp(Shape.L).toFloat())
+                background = rounded(C.container, dp(Shape.M).toFloat())
+                outlineProvider = MorphOutline(dp(Shape.M).toFloat())
                 clipToOutline = true
                 addView(ImageView(ctx).apply { scaleType = ImageView.ScaleType.CENTER_CROP }, FrameLayout.LayoutParams(-1, -1))
                 addView(GapProgress(ctx), FrameLayout.LayoutParams(-1, dp(4), Gravity.BOTTOM).apply { setMargins(dp(10), 0, dp(10), dp(8)) })
             }
             row.addView(thumb, lp(tw, tw * 9 / 16))
             val texts = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), 0, 0, 0) }
-            val titleInk = android.content.res.ColorStateList(arrayOf(FOCUSED_STATE, intArrayOf()), intArrayOf(C.onPrimaryContainer, C.onSurface))
-            val subInk = android.content.res.ColorStateList(arrayOf(FOCUSED_STATE, intArrayOf()), intArrayOf(C.onPrimaryContainer, C.variant))
-            texts.addView(text(T.LABEL, lines = 1).apply { setTextColor(titleInk); isDuplicateParentStateEnabled = true })
-            texts.addView(text(T.META, lines = if (isTv) 2 else 3).apply { setTextColor(subInk); isDuplicateParentStateEnabled = true; setPadding(0, dp(6), 0, 0) })
-            texts.isDuplicateParentStateEnabled = true
+            texts.addView(text(T.LABEL, lines = 1))
+            texts.addView(text(T.META, C.variant, lines = if (isTv) 2 else 3).apply { setPadding(0, dp(6), 0, 0) })
             row.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
             return object : RecyclerView.ViewHolder(row) {}
         }
