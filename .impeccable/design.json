@@ -1,0 +1,385 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-03T00:00:00Z",
+  "title": "Design System: Fastie",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Living-Room Ground",
+        "canonical": "#0F0F11",
+        "tonalRamp": [
+          "#242429",
+          "#3F3F48",
+          "#5B5B67",
+          "#767686",
+          "#9595A1",
+          "#B4B4BC",
+          "#D2D2D8",
+          "#F1F1F3"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Card Surface",
+        "canonical": "#1C1C21",
+        "tonalRamp": [
+          "#232329",
+          "#3E3E49",
+          "#595968",
+          "#737388",
+          "#9393A3",
+          "#B2B2BE",
+          "#D2D2D9",
+          "#F1F1F3"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised Grey",
+        "canonical": "#2B2B31",
+        "tonalRamp": [
+          "#242429",
+          "#3F3F48",
+          "#5A5A67",
+          "#757586",
+          "#9494A1",
+          "#B3B3BD",
+          "#D2D2D8",
+          "#F1F1F3"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Screen White",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#262626",
+          "#434343",
+          "#616161",
+          "#7E7E7E",
+          "#9B9B9B",
+          "#B8B8B8",
+          "#D5D5D5",
+          "#F2F2F2"
+        ]
+      },
+      "synopsis": {
+        "role": "neutral",
+        "displayName": "Synopsis Grey",
+        "canonical": "#D6D6DA",
+        "tonalRamp": [
+          "#242428",
+          "#404047",
+          "#5C5C65",
+          "#777784",
+          "#9696A0",
+          "#B4B4BC",
+          "#D3D3D7",
+          "#F2F2F3"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Netflix Grey",
+        "canonical": "#A3A3A8",
+        "tonalRamp": [
+          "#252527",
+          "#424245",
+          "#5E5E63",
+          "#7A7A81",
+          "#98989E",
+          "#B6B6BA",
+          "#D4D4D6",
+          "#F2F2F3"
+        ]
+      },
+      "muted-on-light": {
+        "role": "neutral",
+        "displayName": "Muted On Light",
+        "canonical": "#4A4A52",
+        "tonalRamp": [
+          "#242428",
+          "#404047",
+          "#5C5C65",
+          "#777784",
+          "#9696A0",
+          "#B4B4BC",
+          "#D3D3D7",
+          "#F2F2F3"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#3A3A42",
+        "tonalRamp": [
+          "#242429",
+          "#3F3F48",
+          "#5A5A67",
+          "#767686",
+          "#9494A1",
+          "#B3B3BD",
+          "#D2D2D8",
+          "#F1F1F3"
+        ]
+      },
+      "snack": {
+        "role": "neutral",
+        "displayName": "Snack White",
+        "canonical": "#F2F2F4",
+        "tonalRamp": [
+          "#232329",
+          "#3E3E49",
+          "#585869",
+          "#737388",
+          "#9292A3",
+          "#B2B2BE",
+          "#D2D2D9",
+          "#F1F1F3"
+        ]
+      },
+      "amber": {
+        "role": "primary",
+        "displayName": "Fastie Amber",
+        "canonical": "#FFB627",
+        "tonalRamp": [
+          "#4C3300",
+          "#875900",
+          "#C18000",
+          "#FBA600",
+          "#FFBB37",
+          "#FFCF71",
+          "#FFE3AB",
+          "#FFF6E6"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Fallback title when no logo art; page titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Phone wordmark."
+      },
+      "row": {
+        "displayName": "Row",
+        "purpose": "Poster-row and stream-group headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Synopses, status and empty-state copy."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Meta lines, subtitles, episode synopses."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, rows, chips, episode titles, snackbar."
+      }
+    },
+    "shadows": [
+      {
+        "name": "snackbar",
+        "value": "Android elevation 6dp",
+        "purpose": "The transient snackbar, the only elevated surface."
+      },
+      {
+        "name": "focus-lift",
+        "value": "translationZ 8 + scale 1.08",
+        "purpose": "Focused poster lift."
+      },
+      {
+        "name": "scrim-left",
+        "value": "linear-gradient(90deg,#0F0F11,#F00F0F11,#B30F0F11,#400F0F11,#000F0F11) across 70% width (TV)",
+        "purpose": "Hero type over backdrop."
+      },
+      {
+        "name": "scrim-bottom",
+        "value": "linear-gradient(0deg,#0F0F11,#CC0F0F11,#000F0F11) over lower 55% of backdrop",
+        "purpose": "Blend backdrop into rows."
+      },
+      {
+        "name": "details-dim",
+        "value": "ground layer, alpha 0 to 0.92 over 35% screen height of scroll",
+        "purpose": "Details scroll dim with matching status-bar scrim."
+      }
+    ],
+    "motion": [
+      {
+        "name": "focus-scale",
+        "value": "150ms, default interpolator",
+        "purpose": "Poster focus scale 1.08 and lift."
+      },
+      {
+        "name": "backdrop-crossfade",
+        "value": "400ms",
+        "purpose": "Hero backdrop swap after load."
+      },
+      {
+        "name": "hero-settle",
+        "value": "220ms delay",
+        "purpose": "TV hero updates only on titles the user pauses on."
+      },
+      {
+        "name": "row-snap",
+        "value": "LinearSmoothScroller, 60/densityDpi per px, snap to start",
+        "purpose": "Focused TV row snaps to top."
+      },
+      {
+        "name": "snackbar",
+        "value": "3500ms dwell",
+        "purpose": "Snackbar lifetime."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "touchscreen, non-TV UI mode"
+      },
+      {
+        "name": "tv",
+        "value": "UI_MODE_TYPE_TELEVISION or no touchscreen"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Resting raised grey; focus inverts to solid white with ground text (text-control focus).",
+      "html": "<div style=\"background:#0F0F11;padding:24px;display:flex;gap:12px\"><button class=\"ds-btn\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M8,5v14l11,-7z\"/></svg>Play</button><button class=\"ds-btn\">My List</button></div>",
+      "css": ".ds-btn{font-family:Roboto,'Helvetica Neue',Arial,sans-serif;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 22px 10px 18px;border:0;border-radius:6px;background:#2B2B31;color:#FFFFFF;font-weight:700;font-size:16px;cursor:pointer;outline:none} .ds-btn:hover,.ds-btn:focus-visible{background:#FFFFFF;color:#0F0F11} .ds-btn:active{background:#DDDDDD;color:#0F0F11}"
+    },
+    {
+      "name": "Primary Button (phone)",
+      "kind": "button",
+      "refersTo": "button-primary-phone",
+      "description": "The phone's single primary action rests white.",
+      "html": "<div style=\"background:#0F0F11;padding:24px\"><button class=\"ds-btn-primary\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M8,5v14l11,-7z\"/></svg>Play</button></div>",
+      "css": ".ds-btn-primary{font-family:Roboto,'Helvetica Neue',Arial,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:200px;min-height:48px;padding:10px 22px;border:0;border-radius:6px;background:#FFFFFF;color:#0F0F11;font-weight:700;font-size:14px;outline:none} .ds-btn-primary:active{background:#DDDDDD}"
+    },
+    {
+      "name": "Poster Card",
+      "kind": "card",
+      "refersTo": "poster-card",
+      "description": "2:3 poster, 6dp corners, no border at rest; focus is 1.08 scale plus 3dp white outline; amber progress.",
+      "html": "<div style=\"background:#0F0F11;padding:32px;display:flex;gap:14px\"><div class=\"ds-poster\" tabindex=\"0\"><span>Hocus Pocus</span><i class=\"ds-track\"></i><i class=\"ds-bar\"></i></div><div class=\"ds-poster\" tabindex=\"0\"><span>Verity</span></div></div>",
+      "css": ".ds-poster{font-family:Roboto,'Helvetica Neue',Arial,sans-serif;position:relative;width:118px;height:177px;border-radius:6px;background:#1C1C21;display:flex;align-items:center;justify-content:center;text-align:center;color:#A3A3A8;font-weight:700;font-size:14px;transition:transform 150ms;outline:none} .ds-poster:hover,.ds-poster:focus-visible{transform:scale(1.08);box-shadow:inset 0 0 0 3px #FFFFFF} .ds-track,.ds-bar{position:absolute;left:8px;bottom:8px;height:4px;border-radius:2px} .ds-track{right:8px;background:rgba(255,255,255,.3)} .ds-bar{width:45%;background:#FFB627}"
+    },
+    {
+      "name": "Season Chip",
+      "kind": "chip",
+      "refersTo": "chip-season",
+      "description": "Hairline pill at rest, raised when selected, white when focused.",
+      "html": "<div style=\"background:#0F0F11;padding:24px;display:flex;gap:8px\"><button class=\"ds-chip ds-chip-on\">Season 1</button><button class=\"ds-chip\">Season 2</button><button class=\"ds-chip\">Specials</button></div>",
+      "css": ".ds-chip{font-family:Roboto,'Helvetica Neue',Arial,sans-serif;min-height:40px;padding:8px 16px;border-radius:20px;border:1px solid #3A3A42;background:transparent;color:#A3A3A8;font-weight:700;font-size:16px;outline:none} .ds-chip-on{background:#2B2B31;border-color:#2B2B31;color:#FFFFFF} .ds-chip:hover,.ds-chip:focus-visible{background:#FFFFFF;border-color:#FFFFFF;color:#0F0F11}"
+    },
+    {
+      "name": "List Row",
+      "kind": "custom",
+      "refersTo": "list-row",
+      "description": "Settings and stream rows; focus inverts to white.",
+      "html": "<div style=\"background:#0F0F11;padding:24px;width:520px\"><div class=\"ds-row\" tabindex=\"0\"><b>Torrentio 4K</b><small>2160p · HDR · 18.4 GB</small></div></div>",
+      "css": ".ds-row{font-family:Roboto,'Helvetica Neue',Arial,sans-serif;display:flex;flex-direction:column;gap:4px;padding:14px 18px;border-radius:6px;background:#1C1C21;color:#FFFFFF;outline:none} .ds-row b{font-size:16px} .ds-row small{color:#A3A3A8;font-size:16px;font-weight:500} .ds-row:hover,.ds-row:focus-visible{background:#FFFFFF;color:#0F0F11} .ds-row:hover small,.ds-row:focus-visible small{color:#4A4A52}"
+    },
+    {
+      "name": "Episode Row",
+      "kind": "custom",
+      "refersTo": "episode-row",
+      "description": "Imagery-plus-text row; focus is a 2dp white stroke on a raised fill.",
+      "html": "<div style=\"background:#0F0F11;padding:24px;width:640px\"><div class=\"ds-ep\" tabindex=\"0\"><div class=\"ds-thumb\"><i></i></div><div><b>1. Pilot</b><p>Two strangers meet on the night the power fails.</p></div></div></div>",
+      "css": ".ds-ep{font-family:Roboto,'Helvetica Neue',Arial,sans-serif;display:flex;align-items:center;gap:16px;padding:8px 12px 8px 8px;border-radius:8px;color:#FFFFFF;outline:none} .ds-ep:hover,.ds-ep:focus-visible{background:#2B2B31;box-shadow:inset 0 0 0 2px #FFFFFF} .ds-thumb{position:relative;width:176px;height:99px;border-radius:4px;background:#1C1C21;overflow:hidden;flex:none} .ds-thumb i{position:absolute;left:0;bottom:0;height:3px;width:60%;background:#FFB627} .ds-ep b{font-size:16px} .ds-ep p{margin:6px 0 0;color:#A3A3A8;font-size:16px;font-weight:500}"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Surface field; focus adds a 2dp white stroke.",
+      "html": "<div style=\"background:#0F0F11;padding:24px\"><label class=\"ds-input\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M15.5,14h-0.79l-0.28,-0.27C15.41,12.59 16,11.11 16,9.5 16,5.91 13.09,3 9.5,3S3,5.91 3,9.5 5.91,16 9.5,16c1.61,0 3.09,-0.59 4.23,-1.57l0.27,0.28v0.79l5,4.99L20.49,19l-4.99,-5zM9.5,14C7.01,14 5,11.99 5,9.5S7.01,5 9.5,5 14,7.01 14,9.5 11.99,14 9.5,14z\"/></svg><input placeholder=\"Search movies and series\"></label></div>",
+      "css": ".ds-input{font-family:Roboto,'Helvetica Neue',Arial,sans-serif;display:flex;align-items:center;gap:12px;width:420px;padding:12px 18px;border-radius:6px;background:#1C1C21;color:#A3A3A8;box-shadow:inset 0 0 0 2px transparent} .ds-input:focus-within{box-shadow:inset 0 0 0 2px #FFFFFF} .ds-input input{flex:1;background:none;border:0;outline:none;color:#FFFFFF;font:inherit;font-size:17px} .ds-input input::placeholder{color:#A3A3A8}"
+    },
+    {
+      "name": "TV Rail",
+      "kind": "nav",
+      "refersTo": "rail-item-focused",
+      "description": "76dp icon rail: amber bolt, grey icons, amber current page, white disc on focus.",
+      "html": "<nav class=\"ds-rail\"><svg width=\"28\" height=\"28\" viewBox=\"0 0 24 24\" fill=\"#FFB627\"><path d=\"M7,2v11h3v9l7,-12h-4l4,-8z\"/></svg><button class=\"ds-rail-i\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M15.5,14h-0.79l-0.28,-0.27C15.41,12.59 16,11.11 16,9.5 16,5.91 13.09,3 9.5,3S3,5.91 3,9.5 5.91,16 9.5,16c1.61,0 3.09,-0.59 4.23,-1.57l0.27,0.28v0.79l5,4.99L20.49,19l-4.99,-5zM9.5,14C7.01,14 5,11.99 5,9.5S7.01,5 9.5,5 14,7.01 14,9.5 11.99,14 9.5,14z\"/></svg></button><button class=\"ds-rail-i ds-rail-on\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M10,20v-6h4v6h5v-8h3L12,3 2,12h3v8z\"/></svg></button></nav>",
+      "css": ".ds-rail{display:flex;flex-direction:column;align-items:center;gap:14px;width:76px;padding:28px 0;background:linear-gradient(90deg,rgba(15,15,17,.95),rgba(15,15,17,0))} .ds-rail svg:first-child{margin-bottom:22px} .ds-rail-i{width:48px;height:48px;border:0;border-radius:24px;background:transparent;color:#A3A3A8;display:flex;align-items:center;justify-content:center;outline:none} .ds-rail-on{color:#FFB627} .ds-rail-i:hover,.ds-rail-i:focus-visible{background:#FFFFFF;color:#0F0F11}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Living-Room Marquee",
+    "overview": "The poster you're on is the whole screen. Fastie plays the streaming-category canon straight, with Netflix's TV app as the bar: a near-black ground, the focused title's backdrop filling the top of the screen behind left and bottom scrims, and horizontal rows of 2:3 posters below. Chrome recedes; artwork, title logos and white type carry everything. The only colour the app owns is one amber, and it is spent sparingly.\n\nThe system is built from platform Android Views and a handful of `GradientDrawable`s: no Material Components, no Compose, no custom fonts. Lightness is a visual constraint as much as an engineering one. Every surface is a flat tonal step on the ground, every state is a drawable swap, and the only motion is a 150ms focus scale and a 400ms backdrop crossfade. The same code renders TV (D-pad, read from 3 m) and phone (touch), with deliberate differences in navigation, hero behaviour and type size.\n\nRejected by the brief and absent from the build: the grid-of-cards dashboard, the settings-heavy \"media center\" look, and Netflix's red or marks.",
+    "keyCharacteristics": [
+      "Near-black ground (#0F0F11) with three flat tonal steps; no decorative shadows.",
+      "Backdrop-led hero with left-to-right and bottom-up ground-coloured scrims.",
+      "Two deliberate focus styles: imagery lifts and outlines, text controls invert to solid white.",
+      "One accent, amber, reserved for progress, the bolt/wordmark and the active nav item.",
+      "System sans (Roboto) in a six-step scale with separate phone and TV sizes.",
+      "Platform Views only; Material Design Icons vector paths for every glyph."
+    ],
+    "rules": [
+      {
+        "name": "The Amber Budget Rule",
+        "body": "Amber marks progress, the brand mark, and the current nav item. Nothing else: not buttons, not focus, not links, not headings. If a new element wants amber, it does not get it.",
+        "section": "colors"
+      },
+      {
+        "name": "The White Means Focus Rule",
+        "body": "On TV, solid white surfaces exist only under focus (the phone's single primary action is the stated exception). White is the cursor.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Scale Rule",
+        "body": "Every style has a phone size and a TV size; never set a size without its TV twin. TV sizes are larger because the screen is read from 3 m.",
+        "section": "typography"
+      },
+      {
+        "name": "The Logo-First Title Rule",
+        "body": "The hero and details title is the title's own logo art when available (TV 30% width, phone ~60%); Display text is the fallback, never both.",
+        "section": "typography"
+      },
+      {
+        "name": "The Focus-Follows Hero Rule",
+        "body": "On TV the hero belongs to whatever is focused; on phone it belongs to the first title and leaves when you scroll. Don't give the phone a focus-following hero or the TV a scrolling one.",
+        "section": "layout"
+      },
+      {
+        "name": "The Scrim Not Shadow Rule",
+        "body": "Type over imagery is made readable by ground-coloured gradients, never by text boxes or drop shadows. (The phone wordmark's soft 12px text shadow is the single exception, there to hold amber over a bright backdrop.)",
+        "section": "elevation & depth"
+      },
+      {
+        "name": "The Imagery Focus Rule",
+        "body": "Posters lift: a 1.08 scale over 150ms plus a 3dp white outline drawn as the card's foreground at its 6dp radius. Episode rows, which are imagery-plus-text, use the quieter form: a 2dp white stroke around a raised (#2B2B31) fill at 8dp radius.",
+        "section": "components"
+      },
+      {
+        "name": "The Text-Control Focus Rule",
+        "body": "Buttons, list rows, season chips and rail icons invert: solid white fill, ground-coloured text and icon. No outline, no scale.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "**Do** build every new screen from the Ui.kt primitives (`text`, `button`, `listRow`, `sectionTitle`, `focusRing`, `backdrop`) and the palette object; no new hex literals for roles that already exist.",
+      "**Do** pick the focus style by element type: imagery gets the 1.08 scale plus 3dp white outline; text controls get the solid white fill with ground text.",
+      "**Do** give every type size a TV twin, and treat the TV twin as the legibility floor (PRODUCT.md asks ~18sp for TV body, and the Body step is 18sp).",
+      "**Do** keep amber to progress bars, the bolt/wordmark, and the active nav item.",
+      "**Do** lay text over imagery with ground-coloured scrims.",
+      "**Do** use Material Design Icons vector paths as drawables, tinted by state."
+    ],
+    "donts": [
+      "**Don't** add Material Components, Compose, or a font download; platform Views and the system sans only. Light is a feature.",
+      "**Don't** use amber for buttons, focus, links, headings or highlights.",
+      "**Don't** put borders on posters or cards at rest.",
+      "**Don't** add shadows for depth; tonal steps and scrims carry it.",
+      "**Don't** use Netflix's red or its marks.",
+      "**Don't** give phone a focus-following hero, or TV a scrolling one."
+    ]
+  }
+}

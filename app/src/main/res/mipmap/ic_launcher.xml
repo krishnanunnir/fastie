@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pre-Android 8 launchers: the same bolt on the same ground, without the adaptive mask. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item><shape android:shape="oval"><solid android:color="@color/ground" /></shape></item>
+    <item android:drawable="@drawable/ic_launcher_fg" />
+</layer-list>
