@@ -49,6 +49,7 @@ object C {
     const val inverse = 0xFFF2F2F4.toInt()
     const val inverseOn = ground
     const val amber = 0xFFFFB627.toInt()
+    const val danger = 0xFFFF6B6B.toInt() // destructive actions only, such as Remove
 
     fun alpha(color: Int, a: Float) = (color and 0x00FFFFFF) or ((a * 255).toInt() shl 24)
 }
@@ -339,4 +340,99 @@ fun Context.streamCard(s: Stream, best: Boolean, onClick: () -> Unit): View = Li
         setTextSize(TypedValue.COMPLEX_UNIT_SP, if (isTv) 13f else 11.5f); ellipsize = TextUtils.TruncateAt.MIDDLE
     }, lp().apply { topMargin = dp(4) }) }
     setOnClickListener { onClick() }
+}
+
+/** A small grey heading above a [group], as on a phone's settings screen. */
+fun Context.groupTitle(s: String) = text(T.META, C.variant, s = s.uppercase()).apply {
+    letterSpacing = 0.08f
+    typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+    setPadding(dp(4), dp(28), 0, dp(10))
+}
+
+/** A rounded surface whose rows ([groupRow]) are separated by hairlines. */
+fun Context.group() = LinearLayout(this).apply {
+    orientation = LinearLayout.VERTICAL
+    background = rounded(C.container, dp(14).toFloat())
+    outlineProvider = MorphOutline(dp(14).toFloat())
+    clipToOutline = true
+}
+
+/** A round badge with [letter], for things without a logo (or until theirs loads). */
+fun Context.initial(letter: String, size: Int = 40) = FrameLayout(this).apply {
+    background = rounded(C.containerHighest, dp(size / 2).toFloat())
+    addView(text(T.LABEL, s = letter.take(1).uppercase()).apply { gravity = Gravity.CENTER }, FrameLayout.LayoutParams(-1, -1))
+}
+
+/**
+ * Adds a row to a [group]: an optional [leading] badge, a title with a line under it (and [below], such as pills),
+ * and an optional [trailing] view; a hairline separates it from the row above. Focus draws a white ring (TV).
+ */
+fun LinearLayout.groupRow(
+    title: CharSequence, sub: CharSequence? = null, leading: View? = null, trailing: View? = null,
+    below: View? = null, subLines: Int = 2, onClick: (() -> Unit)? = null,
+): LinearLayout {
+    val ctx = context
+    if (childCount > 0) addView(View(ctx).apply { setBackgroundColor(C.alpha(C.outlineVariant, 0.6f)) },
+        LinearLayout.LayoutParams(-1, 1).apply { marginStart = ctx.dp(if (leading != null) 68 else 16) })
+    val row = LinearLayout(ctx).apply {
+        gravity = Gravity.CENTER_VERTICAL
+        minimumHeight = ctx.dp(60)
+        setPadding(ctx.dp(16), ctx.dp(12), ctx.dp(14), ctx.dp(12))
+        if (onClick != null) {
+            isFocusable = true
+            isClickable = true
+            setOnClickListener { onClick() }
+            background = StateListDrawable().apply {
+                addState(FOCUSED, rounded(C.containerHighest, ctx.dp(14).toFloat(), ctx.dp(2), C.onSurface))
+                addState(PRESSED, rounded(C.containerHigh, 0f))
+            }
+        }
+        leading?.let { addView(it, LinearLayout.LayoutParams(ctx.dp(40), ctx.dp(40)).apply { marginEnd = ctx.dp(12) }) }
+        val texts = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL }
+        texts.addView(ctx.text(T.LABEL, lines = 1, s = title))
+        sub?.let { texts.addView(ctx.text(T.META, C.variant, lines = subLines, s = it).apply { setPadding(0, ctx.dp(3), 0, 0) }) }
+        below?.let { texts.addView(it, lp().apply { topMargin = ctx.dp(8) }) }
+        addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
+        trailing?.let { addView(it, lp(-2, -2).apply { marginStart = ctx.dp(12) }) }
+    }
+    addView(row, lp())
+    return row
+}
+
+/** A grey chevron for rows that open something. */
+fun Context.chevron() = ImageView(this).apply { setImageResource(R.drawable.ic_chevron); setColorFilter(C.variant) }
+
+/** A [sheet]: the dialog, its subtitle line (to update once things load), and the body to fill. */
+class Sheet(val dialog: com.google.android.material.bottomsheet.BottomSheetDialog, val sub: TextView, val body: LinearLayout)
+
+/**
+ * Kino's bottom sheet: ground with rounded top corners, a grab handle, a title and a grey line under it, then [Sheet.body].
+ * It opens fully expanded; call `dialog.show()` once the body is in.
+ */
+fun Context.sheet(title: String, sub: String?): Sheet {
+    val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+    val pad = dp(if (isTv) 32 else 20)
+    val subView = text(T.META, C.variant, s = sub).apply { visibility = if (sub == null) View.GONE else View.VISIBLE }
+    val body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+    dialog.setContentView(LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding(0, 0, 0, dp(16))
+        addView(View(context).apply { background = rounded(C.outlineVariant, dp(2).toFloat()) },
+            lp(dp(36), dp(4)).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = dp(10) })
+        addView(text(T.TITLE, s = title), lp().apply { setMargins(pad, dp(18), pad, 0) })
+        addView(subView, lp().apply { setMargins(pad, dp(4), pad, 0) })
+        addView(body, lp().apply { topMargin = dp(16) })
+    })
+    // The ground and rounded top go on Material's own sheet frame, which also pads itself above the gesture bar,
+    // so that strip is covered too instead of showing the page through it.
+    dialog.setOnShowListener {
+        dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.background = GradientDrawable().apply {
+            setColor(C.ground)
+            val r = dp(20).toFloat()
+            cornerRadii = floatArrayOf(r, r, r, r, 0f, 0f, 0f, 0f)
+        }
+    }
+    dialog.behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+    dialog.behavior.skipCollapsed = true
+    return Sheet(dialog, subView, body)
 }

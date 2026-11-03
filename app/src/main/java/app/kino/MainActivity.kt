@@ -38,7 +38,7 @@ class MainActivity : Activity(), PosterHost {
         root.addView(pages, FrameLayout.LayoutParams(-1, -1))
         val bar = if (isTv) tabs() else bottomBar()
         navBar = if (isTv) bar else dock
-        // The dock brings its own fade, so the phone's system bar goes clear over it.
+        // Pages run to the bottom edge under the floating dock, so the phone's system bar goes clear too.
         if (!isTv) window.navigationBarColor = Color.TRANSPARENT
         root.addView(bar)
         root.setOnApplyWindowInsetsListener { _, insets ->
@@ -48,9 +48,7 @@ class MainActivity : Activity(), PosterHost {
             val bottom = insets.systemWindowInsetBottom
             if (!isTv) {
                 (dock.layoutParams as FrameLayout.LayoutParams).bottomMargin = bottom + dp(12)
-                dockFade.layoutParams.height = bottom + dp(140)
                 bar.requestLayout()
-                pages.setPadding(0, 0, 0, bottom + dp(92))
             }
             settings?.view?.setPadding(0, topInset, 0, 0)
             if (::home.isInitialized) home.inset(topInset)
@@ -91,20 +89,14 @@ class MainActivity : Activity(), PosterHost {
     }
 
     private lateinit var dock: LinearLayout
-    private lateinit var dockFade: View
 
     /**
-     * Phone: a capsule floating over a fade, so rows scroll quietly beneath it. The current page is a white pill with
-     * its label; the others are just icons. The pill slides between them (see [show]).
+     * Phone: a capsule floating over the page itself, which scrolls on beneath it (each page leaves room at its end to
+     * scroll clear). The current page is a white pill with its label; the others are just icons. The pill slides
+     * between them (see [show]).
      */
     private fun bottomBar() = FrameLayout(this).apply {
         layoutParams = FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM)
-        // Heights are set with the window insets (see onCreate): a fade with no height of its own would fill the screen.
-        dockFade = View(context).apply {
-            background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.BOTTOM_TOP,
-                intArrayOf(C.alpha(C.ground, 0.95f), C.alpha(C.ground, 0.7f), C.alpha(C.ground, 0f)))
-        }
-        addView(dockFade, FrameLayout.LayoutParams(-1, dp(140), Gravity.BOTTOM))
         dock = LinearLayout(context).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(8), 0, dp(8), 0)
@@ -348,7 +340,7 @@ class HomePage(private val a: MainActivity) {
             header.addView(card, lp(pw, ph).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = a.dp(12); bottomMargin = a.dp(6) })
             adapter = RowsAdapter(a, header)
             view.addView(rows, FrameLayout.LayoutParams(-1, -1))
-            rows.setPadding(0, 0, 0, a.dp(16))
+            rows.setPadding(0, 0, 0, a.dp(136)) // room to scroll the last row clear of the dock
         }
         rows.adapter = adapter
         view.addView(status, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))

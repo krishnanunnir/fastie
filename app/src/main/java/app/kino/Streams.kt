@@ -4,17 +4,12 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
-import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.snackbar.Snackbar
 import org.json.JSONArray
 import org.json.JSONObject
@@ -100,35 +95,19 @@ fun Activity.playBest(item: Item, type: String, id: String, season: Int, episode
  * loading line and fills in when the addons answer; the pick replaces the remembered link and plays.
  */
 fun Activity.chooseStream(item: Item, type: String, id: String, season: Int, episode: Int) {
-    val sheet = BottomSheetDialog(this)
     val h = resources.displayMetrics.heightPixels
     val pad = dp(if (isTv) 32 else 16)
-    val sub = text(T.META, C.variant, s = listOfNotNull(item.name, if (season >= 0) "S$season:E$episode" else null).joinToString("  ·  "))
+    val shell = sheet("Choose a stream", listOfNotNull(item.name, if (season >= 0) "S$season:E$episode" else null).joinToString("  ·  "))
+    val sheet = shell.dialog
+    val sub = shell.sub
     val loading = progressLine().apply { isIndeterminate = true }
     val list = RecyclerView(this).apply {
         layoutManager = LinearLayoutManager(context)
         clipToPadding = false
-        setPadding(pad, dp(8), pad, dp(24))
+        setPadding(pad, 0, pad, dp(8))
     }
-    sheet.setContentView(LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        background = GradientDrawable().apply {
-            setColor(C.ground)
-            val r = dp(20).toFloat()
-            cornerRadii = floatArrayOf(r, r, r, r, 0f, 0f, 0f, 0f)
-        }
-        addView(View(context).apply { background = rounded(C.outlineVariant, dp(2).toFloat()) },
-            lp(dp(36), dp(4)).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = dp(10) })
-        addView(text(T.TITLE, s = "Choose a stream"), lp().apply { setMargins(pad, dp(18), pad, 0) })
-        addView(sub, lp().apply { setMargins(pad, dp(4), pad, dp(12)) })
-        addView(loading, lp().apply { setMargins(pad, 0, pad, dp(8)) })
-        addView(list, lp(-1, (h * 0.7f).toInt()))
-    })
-    sheet.setOnShowListener {
-        sheet.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.setBackgroundColor(Color.TRANSPARENT)
-    }
-    sheet.behavior.state = BottomSheetBehavior.STATE_EXPANDED
-    sheet.behavior.skipCollapsed = true
+    shell.body.addView(loading, lp().apply { setMargins(pad, 0, pad, dp(8)) })
+    shell.body.addView(list, lp(-1, (h * 0.7f).toInt()))
     sheet.show()
     load({ findStreams(this, type, id, season >= 0) }) { r ->
         loading.visibility = View.GONE

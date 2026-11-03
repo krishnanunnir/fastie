@@ -56,6 +56,9 @@ class PosterAdapter(
 
     override fun getItemCount() = items.size
 
+    // Rows share one pool of card views; wide Continue Watching cards must never be reused as posters, or the reverse.
+    override fun getItemViewType(position: Int) = if (landscape) 1 else 0
+
     override fun onCreateViewHolder(parent: ViewGroup, type: Int): PosterHolder {
         val ctx = parent.context
         val tv = ctx.isTv
@@ -205,7 +208,7 @@ class Row(val title: String, val items: List<Item>, val progress: Map<String, Pr
 /** The vertical list of titled poster rows. [header] (the phone's hero) scrolls with them as item 0. */
 class RowsAdapter(private val host: PosterHost, private val header: View? = null) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     val rows = mutableListOf<Row>()
-    private val pool = RecyclerView.RecycledViewPool().apply { setMaxRecycledViews(0, 40) }
+    private val pool = RecyclerView.RecycledViewPool().apply { setMaxRecycledViews(0, 40); setMaxRecycledViews(1, 12) }
     private val offset get() = if (header != null) 1 else 0
 
     /**

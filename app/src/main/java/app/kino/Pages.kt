@@ -1,8 +1,9 @@
 package app.kino
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import android.content.Intent
+import android.graphics.Color
+import android.net.Uri
 import android.speech.RecognizerIntent
 import android.text.Editable
 import android.text.TextWatcher
@@ -12,6 +13,7 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -60,7 +62,7 @@ class SearchPage(private val a: MainActivity) {
             adapter = this@SearchPage.adapter
             itemAnimator = null
             clipToPadding = false
-            setPadding(0, 0, 0, a.dp(120))
+            setPadding(0, 0, 0, a.dp(136))
         }, lp(-1, -1))
         status.text = "Find a title across all your addons."
         view.setOnApplyWindowInsetsListener { v, insets ->
@@ -106,19 +108,39 @@ class SearchPage(private val a: MainActivity) {
 class LibraryPage(private val a: MainActivity) {
     val view = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
     private val grid = RecyclerView(a)
-    private val empty = a.text(T.BODY, C.variant, s = "Titles you add to My List show up here.")
+    private val count = a.text(T.META, C.variant)
     private val host = object : PosterHost { override fun open(item: Item, progress: Progress?) = openItem(a, item, null) }
+
+    /** Nothing saved yet: a bookmark in a circle, a line on how to save, and a way back to browsing. */
+    private val empty = LinearLayout(a).apply {
+        orientation = LinearLayout.VERTICAL
+        gravity = Gravity.CENTER
+        setPadding(a.dp(32), 0, a.dp(32), a.dp(120))
+        addView(FrameLayout(a).apply {
+            background = rounded(C.container, a.dp(40).toFloat())
+            addView(ImageView(a).apply { setImageResource(R.drawable.ic_list); setColorFilter(C.variant) },
+                FrameLayout.LayoutParams(a.dp(34), a.dp(34), Gravity.CENTER))
+        }, lp(a.dp(80), a.dp(80)))
+        addView(a.text(T.TITLE, s = "Nothing saved yet").apply { gravity = Gravity.CENTER }, lp(-2, -2).apply { topMargin = a.dp(20) })
+        addView(a.text(T.BODY, C.variant, s = "Tap My List on any title to keep it here. It syncs with your Nuvio account.").apply {
+            gravity = Gravity.CENTER
+        }, lp(-2, -2).apply { topMargin = a.dp(8) })
+        addView(a.button("Browse Home", primary = true) { a.show(0) }, lp(-2, -2).apply { topMargin = a.dp(24) })
+    }
 
     init {
         val s = a.side()
-        view.addView(a.text(T.DISPLAY, s = "My List"), lp().apply { setMargins(s, a.dp(if (a.isTv) 32 else 16), s, a.dp(8)) })
-        view.addView(empty, lp().apply { setMargins(s, a.dp(12), s, 0) })
+        view.addView(a.text(T.DISPLAY, s = "My List"), lp().apply { setMargins(s, a.dp(if (a.isTv) 32 else 16), s, 0) })
+        view.addView(count, lp().apply { setMargins(s, a.dp(4), s, a.dp(12)) })
+        view.addView(empty, lp(-1, 0).apply { weight = 1f })
         val cell = a.posterWidth() + a.dp(if (a.isTv) 14 else 8)
         val available = a.resources.displayMetrics.widthPixels - 2 * s
         grid.layoutManager = GridLayoutManager(a, (available / cell).coerceAtLeast(3))
         grid.clipToPadding = false
-        grid.setPadding(s - a.dp(6), 0, s - a.dp(6), a.dp(120))
-        view.addView(grid, lp(-1, -1))
+        grid.setPadding(s - a.dp(6), 0, s - a.dp(6), a.dp(136))
+        view.addView(grid, lp(-1, 0).apply { weight = 1f })
+        // Created after the window's insets arrived, so it starts from what Main measured.
+        view.setPadding(0, a.topInset, 0, 0)
         view.setOnApplyWindowInsetsListener { v, insets ->
             @Suppress("DEPRECATION") v.setPadding(0, insets.systemWindowInsetTop, 0, 0); insets
         }
@@ -129,6 +151,9 @@ class LibraryPage(private val a: MainActivity) {
         val items = Store.library(a)
         grid.adapter = PosterAdapter(items, host, fill = true)
         empty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+        grid.visibility = if (items.isEmpty()) View.GONE else View.VISIBLE
+        count.text = if (items.isEmpty()) "" else "${items.size} ${if (items.size == 1) "title" else "titles"}"
+        count.visibility = if (items.isEmpty()) View.GONE else View.VISIBLE
         grid.isFocusable = items.isNotEmpty() // an empty grid would swallow D-pad focus invisibly
     }
 }
@@ -139,57 +164,75 @@ class SettingsPage(private val a: MainActivity) {
 
     init {
         val s = a.side()
-        col.setPadding(s, a.dp(if (a.isTv) 24 else 8), s, a.dp(120))
+        col.setPadding(s, a.dp(if (a.isTv) 24 else 8), s, a.dp(136))
         view.addView(col, FrameLayout.LayoutParams(if (a.isTv) a.dp(640) else -1, -2))
         refresh()
     }
 
-    private fun row(title: String, sub: String? = null, onClick: (() -> Unit)? = null) =
-        col.addView(a.listRow(title, sub, onClick), lp().apply { bottomMargin = a.dp(8) })
-
     fun refresh() {
-        val keep = col.findFocus()?.let { col.indexOfChild(it) } ?: -1
+        val keep = col.findFocus()?.let { f -> generateSequence(f) { it.parent as? View }.firstOrNull { it.parent === col } }?.let { col.indexOfChild(it) } ?: -1
         col.removeAllViews()
         col.addView(a.text(T.DISPLAY, s = "Settings"), lp().apply { bottomMargin = a.dp(4) })
 
-        col.addView(a.sectionTitle("Nuvio account"))
-        if (Nuvio.signedIn(a)) {
-            row("Signed in as ${Nuvio.email(a) ?: "your Nuvio account"}", "Your addons, My List and Continue Watching sync with Nuvio.")
-            row("Sync now", "Get the latest from your Nuvio account.") { sync() }
-            row("Sign out", "Keeps what's on this device; stops syncing.") {
-                Nuvio.signOut(a); a.say("Signed out of Nuvio"); refresh()
-            }
-        } else {
-            row("Sign in to Nuvio", "Bring your addons, My List and Continue Watching from Nuvio.") {
+        // Account: who you are, and what syncing does, with its two actions right there.
+        col.addView(a.groupTitle("Nuvio account"))
+        col.addView(a.group().apply {
+            if (Nuvio.signedIn(a)) {
+                val email = Nuvio.email(a) ?: "Your Nuvio account"
+                val at = Nuvio.syncedAt(a)
+                val synced = if (at == 0L) "My List, progress and addons sync with Nuvio"
+                    else if (System.currentTimeMillis() - at < 60_000) "Synced just now"
+                    else "Synced " + android.text.format.DateUtils.getRelativeTimeSpanString(at, System.currentTimeMillis(), 60_000).toString().lowercase()
+                groupRow(email, synced, leading = a.initial(email))
+                addView(LinearLayout(a).apply {
+                    setPadding(a.dp(16), a.dp(4), a.dp(16), a.dp(16))
+                    lateinit var syncButton: com.google.android.material.button.MaterialButton
+                    syncButton = a.button("Sync now") { syncButton.text = "Syncing…"; syncButton.isEnabled = false; sync() }
+                    addView(syncButton, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = a.dp(10) })
+                    addView(a.button("Sign out") { Nuvio.signOut(a); a.say("Signed out of Nuvio"); refresh() }, LinearLayout.LayoutParams(0, -2, 1f))
+                })
+            } else groupRow("Sign in to Nuvio", "Bring your addons, My List and Continue Watching", leading = a.initial("N"), trailing = a.chevron()) {
                 a.startActivity(Intent(a, SignInActivity::class.java))
             }
-        }
+        })
 
-        col.addView(a.sectionTitle("Addons"))
-        Addons.list(a).forEach { addon ->
-            val streams = addon.manifest.optJSONArray("resources")?.toString()?.contains("stream") == true
-            val what = listOfNotNull(
-                addon.catalogs.size.takeIf { it > 0 }?.let { "$it catalogs" },
-                "streams".takeIf { streams },
-            ).joinToString(" · ").ifBlank { "details only" }
-            row(addon.name, "$what\n${addon.base.removePrefix("https://")}") { addonActions(addon) }
-        }
-        row("Add an addon", "Paste a Stremio addon link (manifest.json).") { addAddon() }
+        // Addons: logo, name, what each one provides, and just its site (the rest of the link is its private config).
+        col.addView(a.groupTitle("Addons"))
+        col.addView(a.group().apply {
+            Addons.list(a).forEach { addon ->
+                val pills = rolePills(addon)
+                groupRow(addon.name, Uri.parse(addon.url).host, leading = badge(addon, 40), trailing = a.chevron(), below = pills, subLines = 1) { addonSheet(addon) }
+            }
+            groupRow("Add an addon", "Paste a Stremio addon link", leading = a.initial("+"), trailing = a.chevron()) { addAddon() }
+        })
 
-        col.addView(a.sectionTitle("Playback"))
-        val external = Store.externalPlayer(a)
-        row("Player: ${if (external) "another app" else "Kino"}",
-            if (external) "Streams open in VLC, mpv or any video app you choose." else "Plays here, with subtitles, audio tracks and resume.") {
-            Store.setExternalPlayer(a, !external); refresh()
-        }
+        // Playback: where streams open, and the debrid service that makes torrents playable.
+        col.addView(a.groupTitle("Playback"))
+        col.addView(a.group().apply {
+            val external = Store.externalPlayer(a)
+            val toggle = com.google.android.material.materialswitch.MaterialSwitch(a).apply {
+                isChecked = external; isClickable = false; isFocusable = false
+                val on = intArrayOf(android.R.attr.state_checked)
+                trackTintList = android.content.res.ColorStateList(arrayOf(on, intArrayOf()), intArrayOf(C.onSurface, C.containerHighest))
+                thumbTintList = android.content.res.ColorStateList(arrayOf(on, intArrayOf()), intArrayOf(C.ground, C.variant))
+                trackDecorationTintList = android.content.res.ColorStateList.valueOf(Color.TRANSPARENT)
+            }
+            groupRow("Use another player app", if (external) "Streams open in VLC, mpv or any video app" else "Plays in Kino, with subtitles, audio tracks and resume",
+                trailing = toggle) { Store.setExternalPlayer(a, !external); refresh() }
+            val connected = TorBox.key(a) != null
+            groupRow("TorBox", if (connected) torBoxPlan ?: "Cached torrents from your addons play through it" else "Add your API key so torrents from your addons can play",
+                leading = a.initial("T"), trailing = if (connected) a.pill("Connected", solid = true) else a.chevron()) { torBox() }
+            // The plan and expiry come from TorBox, once per visit to Settings.
+            if (connected && !askedPlan) { askedPlan = true; a.load({ TorBox.plan(TorBox.key(a)!!) }) { r -> r.getOrNull()?.let { torBoxPlan = it; refresh() } } }
+        })
 
-        col.addView(a.sectionTitle("Debrid"))
-        if (TorBox.key(a) != null) row("TorBox: connected", "Cached torrents from your addons play through TorBox. Tap to change or remove the key.") { torBox() }
-        else row("Connect TorBox", "Paste your TorBox API key so torrents from your addons can play. It stays on this device.") { torBox() }
-
-        col.addView(a.sectionTitle("About"))
-        row("Kino ${a.packageManager.getPackageInfo(a.packageName, 0).versionName}",
-            "Plays what your addons provide. Kino hosts no content and isn't affiliated with Nuvio or Stremio.")
+        // About, quietly at the end.
+        col.addView(ImageView(a).apply { setImageResource(R.drawable.kino_logo); alpha = 0.9f },
+            lp(a.dp(80), a.dp(24)).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = a.dp(36) })
+        col.addView(a.text(T.META, C.variant, s = "Version ${a.packageManager.getPackageInfo(a.packageName, 0).versionName}\n" +
+            "Plays what your addons provide. Kino hosts no content and isn't affiliated with Nuvio or Stremio.").apply {
+            gravity = Gravity.CENTER; setLineSpacing(0f, 1.3f)
+        }, lp().apply { setMargins(a.dp(16), a.dp(10), a.dp(16), 0) })
 
         if (keep >= 0) col.getChildAt(keep.coerceAtMost(col.childCount - 1))?.requestFocus()
     }
@@ -198,58 +241,145 @@ class SettingsPage(private val a: MainActivity) {
         a.say("Syncing with Nuvio…")
         a.load({ Nuvio.pull(a) }) { r ->
             r.onSuccess { a.say("Synced with Nuvio"); refresh(); a.reloadHome() }
-                .onFailure { a.say("Sync failed: ${it.message?.take(80)}") }
+                .onFailure { a.say("Sync failed: ${it.message?.take(80)}"); refresh() }
         }
     }
 
-    private fun addonActions(addon: Addon) {
-        val actions = arrayOf("Move up", "Move down", "Remove")
-        MaterialAlertDialogBuilder(a).setTitle(addon.name).setItems(actions) { _, i ->
-            when (i) {
-                0 -> Addons.move(a, addon, -1)
-                1 -> Addons.move(a, addon, 1)
-                2 -> Addons.remove(a, addon)
+    private var torBoxPlan: String? = null
+    private var askedPlan = false
+
+    /** What an addon provides, as pills: Catalogs, Streams, Subtitles (or Details when it's none of those). */
+    private fun rolePills(addon: Addon) = com.google.android.material.chip.ChipGroup(a).apply {
+        chipSpacingHorizontal = a.dp(6); chipSpacingVertical = a.dp(6)
+        val resources = addon.manifest.optJSONArray("resources")?.toString().orEmpty()
+        listOfNotNull(
+            "Catalogs".takeIf { addon.catalogs.isNotEmpty() },
+            "Streams".takeIf { "stream" in resources },
+            "Subtitles".takeIf { "subtitles" in resources },
+        ).ifEmpty { listOf("Details") }.forEach { addView(a.pill(it)) }
+    }
+
+    /** The addon's logo, whole, inside a circle; its initial until (or unless) the logo loads. */
+    private fun badge(addon: Addon, size: Int) = a.initial(addon.name, size).apply {
+        val letter = getChildAt(0)
+        val logo = ImageView(a).apply {
+            scaleType = ImageView.ScaleType.FIT_CENTER; visibility = View.GONE
+            val p = a.dp(size / 7); setPadding(p, p, p, p)
+        }
+        addView(logo, FrameLayout.LayoutParams(-1, -1))
+        outlineProvider = MorphOutline(a.dp(size / 2).toFloat()); clipToOutline = true
+        addon.manifest.optString("logo").takeIf { it.startsWith("http") }?.let { url ->
+            Images.load(logo, url, a.dp(size), alpha = true) { ok ->
+                logo.visibility = if (ok) View.VISIBLE else View.GONE
+                letter.visibility = if (ok) View.GONE else View.VISIBLE
             }
-            refresh(); a.reloadHome()
-        }.show()
+        }
     }
 
-    private fun addAddon() {
-        val box = a.textField("https://…/manifest.json")
-        val form = FrameLayout(a).apply { setPadding(a.dp(24), a.dp(8), a.dp(24), 0); addView(box) }
-        MaterialAlertDialogBuilder(a).setTitle("Add an addon").setView(form)
-            .setPositiveButton("Add") { _, _ ->
-                val url = box.editText!!.text.toString()
-                if (url.isBlank()) return@setPositiveButton
-                a.say("Adding addon…")
-                a.load({ Addons.add(a, url) }) { r ->
-                    r.onSuccess { a.say("Added ${it.name}"); refresh(); a.reloadHome() }
-                        .onFailure { a.say("Couldn't add that addon. Check the link and try again.") }
+    /** One addon up close: what it is and does, then moving, copying and removing it. */
+    private fun addonSheet(addon: Addon) {
+        val all = Addons.list(a)
+        val i = all.indexOfFirst { it.url == addon.url }
+        // "0.1.1793454912113" reads as "v0.1.1": the parts after the third are build stamps.
+        val version = addon.manifest.optString("version").takeIf { it.isNotBlank() }?.let { "v" + it.split('.').take(3).joinToString(".") }
+        val sheet = a.sheet(addon.name, listOfNotNull(Uri.parse(addon.url).host, version).joinToString("  ·  "))
+        val pad = a.dp(if (a.isTv) 32 else 20)
+        sheet.body.addView(LinearLayout(a).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(pad, 0, pad, 0)
+            addView(LinearLayout(a).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                addView(badge(addon, 56), lp(a.dp(56), a.dp(56)).apply { marginEnd = a.dp(14) })
+                addView(rolePills(addon), LinearLayout.LayoutParams(0, -2, 1f))
+            })
+            addon.manifest.optString("description").takeIf { it.isNotBlank() }?.let {
+                addView(a.text(T.BODY, C.variant, lines = 4, s = it.trim()), lp().apply { topMargin = a.dp(14) })
+            }
+            fun done(message: String) { sheet.dialog.dismiss(); a.say(message); refresh(); a.reloadHome() }
+            addView(a.group().apply {
+                if (i > 0) groupRow("Move up", "Its catalogs come earlier on Home", trailing = a.chevron()) { Addons.move(a, addon, -1); done("Moved ${addon.name} up") }
+                if (i in 0 until all.lastIndex) groupRow("Move down", "Its catalogs come later on Home", trailing = a.chevron()) { Addons.move(a, addon, 1); done("Moved ${addon.name} down") }
+                groupRow("Copy link", "The full manifest link, with its settings") {
+                    a.getSystemService(android.content.ClipboardManager::class.java)
+                        .setPrimaryClip(android.content.ClipData.newPlainText(addon.name, addon.url))
+                    sheet.dialog.dismiss(); a.say("Link copied")
                 }
-            }.setNegativeButton("Cancel", null).show()
+                groupRow(android.text.SpannableString("Remove").apply { setSpan(android.text.style.ForegroundColorSpan(C.danger), 0, length, 0) }, null) {
+                    Addons.remove(a, addon); done("Removed ${addon.name}")
+                }
+            }, lp().apply { topMargin = a.dp(18) })
+            if (Nuvio.signedIn(a)) addView(a.text(T.META, C.variant, s = "Changes here stay on this device; your Nuvio list replaces them on the next sync.").apply {
+                setPadding(a.dp(4), a.dp(12), a.dp(4), 0)
+            })
+        })
+        sheet.dialog.show()
     }
 
-    /** Asks for a TorBox API key, checks it with TorBox, and keeps it on this device. */
+    /** A sheet with a field for the link, a Paste button (links usually come from the clipboard) and Add. */
+    private fun addAddon() {
+        val sheet = a.sheet("Add an addon", "Paste a Stremio addon link (it ends in manifest.json)")
+        val pad = a.dp(if (a.isTv) 32 else 20)
+        val box = a.textField("https://…/manifest.json")
+        val field = box.editText!!
+        fun add() {
+            val url = field.text.toString().trim()
+            if (url.isBlank()) return
+            sheet.dialog.dismiss()
+            a.say("Adding addon…")
+            a.load({ Addons.add(a, url) }) { r ->
+                r.onSuccess { a.say("Added ${it.name}"); refresh(); a.reloadHome() }
+                    .onFailure { a.say("Couldn't add that addon. Check the link and try again.") }
+            }
+        }
+        sheet.body.addView(LinearLayout(a).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(pad, 0, pad, 0)
+            addView(box)
+            addView(LinearLayout(a).apply {
+                addView(a.button("Paste") {
+                    a.getSystemService(android.content.ClipboardManager::class.java).primaryClip?.getItemAt(0)?.coerceToText(a)?.let {
+                        field.setText(it.toString().trim()); field.setSelection(field.text.length)
+                    }
+                }, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = a.dp(10) })
+                addView(a.button("Add", primary = true) { add() }, LinearLayout.LayoutParams(0, -2, 1f))
+            }, lp().apply { topMargin = a.dp(14) })
+        })
+        field.setOnEditorActionListener { _, _, _ -> add(); true }
+        sheet.dialog.show()
+    }
+
+    /** Asks for a TorBox API key in a sheet, checks it with TorBox, and keeps it on this device. */
     private fun torBox() {
-        val box = a.textField("TorBox API key").apply {
+        val connected = TorBox.key(a) != null
+        val sheet = a.sheet("TorBox", "Find your API key at torbox.app/settings. It stays on this device.")
+        val pad = a.dp(if (a.isTv) 32 else 20)
+        val box = a.textField(if (connected) "Paste a new API key" else "TorBox API key").apply {
             endIconMode = com.google.android.material.textfield.TextInputLayout.END_ICON_PASSWORD_TOGGLE
             setEndIconTintList(android.content.res.ColorStateList.valueOf(C.variant))
             editText!!.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
             editText!!.typeface = android.graphics.Typeface.DEFAULT
         }
-        val form = FrameLayout(a).apply { setPadding(a.dp(24), a.dp(8), a.dp(24), 0); addView(box) }
-        MaterialAlertDialogBuilder(a).setTitle("TorBox").setMessage("Find your key at torbox.app/settings, under API.").setView(form)
-            .setPositiveButton("Save") { _, _ ->
-                val key = box.editText!!.text.toString().trim()
-                if (key.isBlank()) return@setPositiveButton
-                a.say("Checking your TorBox key…")
-                a.load({ TorBox.check(key) }) { r ->
-                    r.onSuccess { TorBox.setKey(a, key); a.say("TorBox connected"); refresh() }
-                        .onFailure { a.say(if (it is HttpException && it.code in 401..403) "TorBox didn't accept that key." else "Couldn't reach TorBox. Try again.") }
-                }
-            }
-            .apply { if (TorBox.key(a) != null) setNeutralButton("Remove") { _, _ -> TorBox.setKey(a, null); a.say("TorBox removed"); refresh() } }
-            .setNegativeButton("Cancel", null).show()
+        sheet.body.addView(LinearLayout(a).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(pad, 0, pad, 0)
+            addView(box)
+            addView(LinearLayout(a).apply {
+                if (connected) addView(a.button("Remove key") {
+                    TorBox.setKey(a, null); torBoxPlan = null; askedPlan = false; sheet.dialog.dismiss(); a.say("TorBox removed"); refresh()
+                }, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = a.dp(10) })
+                addView(a.button("Save", primary = true) {
+                    val key = box.editText!!.text.toString().trim()
+                    if (key.isBlank()) return@button
+                    sheet.dialog.dismiss()
+                    a.say("Checking your TorBox key…")
+                    a.load({ TorBox.check(key) }) { r ->
+                        r.onSuccess { TorBox.setKey(a, key); torBoxPlan = null; askedPlan = false; a.say("TorBox connected"); refresh() }
+                            .onFailure { a.say(if (it is HttpException && it.code in 401..403) "TorBox didn't accept that key." else "Couldn't reach TorBox. Try again.") }
+                    }
+                }, LinearLayout.LayoutParams(0, -2, 1f))
+            }, lp().apply { topMargin = a.dp(14) })
+        })
+        sheet.dialog.show()
     }
 }
 

@@ -24,6 +24,19 @@ object TorBox {
     /** Throws if TorBox doesn't accept [key]. */
     fun check(key: String) { data(Net.get("$API/user/me", auth(key))) }
 
+    /** "Pro · until 12 Dec 2026": the account's plan and when it runs out, or null if TorBox doesn't say. */
+    fun plan(key: String): String? {
+        val me = data(Net.get("$API/user/me", auth(key))) as? JSONObject ?: return null
+        val name = when (me.optInt("plan", -1)) { 0 -> "Free"; 1 -> "Essential"; 2 -> "Pro"; 3 -> "Standard"; else -> null }
+        val until = me.optString("premium_expires_at").takeIf { it.length >= 19 }?.let { iso ->
+            runCatching {
+                val parse = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US).apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }
+                "until " + java.text.SimpleDateFormat("d MMM yyyy", java.util.Locale.getDefault()).format(parse.parse(iso.take(19))!!)
+            }.getOrNull()
+        }
+        return listOfNotNull(name, until).joinToString("  ·  ").ifBlank { null }
+    }
+
     /** Which of [hashes] TorBox already has, so they play at once. */
     fun cached(key: String, hashes: List<String>): Set<String> = hashes.distinct().chunked(100).map { chunk ->
         Net.fan.submit(java.util.concurrent.Callable {

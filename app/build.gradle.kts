@@ -19,6 +19,9 @@ android {
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
     }
 
+    // The app is English-only; drop the dozens of translations Material and Media3 bring along.
+    androidResources { localeFilters += "en" }
+
     // F-Droid rejects AGP's encrypted dependency metadata in the APK signing block.
     dependenciesInfo {
         includeInApk = false
@@ -47,6 +50,8 @@ android {
 
     packaging {
         resources.excludes += setOf("kotlin/**", "kotlin-tooling-metadata.json", "META-INF/*.version")
+        // Compress FFmpeg in the APK: a much smaller download, unpacked once at install.
+        jniLibs.useLegacyPackaging = true
     }
 
     compileOptions {

@@ -25,6 +25,9 @@ object Nuvio {
     fun signedIn(ctx: Context) = prefs(ctx).contains("refresh")
     fun email(ctx: Context): String? = prefs(ctx).getString("email", null)
 
+    /** When [pull] last finished, in epoch millis, or 0. */
+    fun syncedAt(ctx: Context) = prefs(ctx).getLong("synced_at", 0)
+
     fun signOut(ctx: Context) = prefs(ctx).edit().clear().apply()
 
     /** Reads the server's discovery document and remembers its backend and key. */
@@ -122,6 +125,7 @@ object Nuvio {
 
         val prog = JSONArray(rpc(ctx, "sync_pull_watch_progress", JSONObject().put("p_limit", 300)))
         Store.mergeProgress(ctx, List(prog.length()) { Progress.from(prog.getJSONObject(it)) })
+        prefs(ctx).edit().putLong("synced_at", System.currentTimeMillis()).apply()
     }
 
     fun pushProgress(ctx: Context, p: Progress) {
