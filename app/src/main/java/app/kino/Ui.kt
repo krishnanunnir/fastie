@@ -229,7 +229,7 @@ fun Context.metaText(item: Item, size: Float): CharSequence = android.text.Spann
     append(item.metaLine)
 }
 
-fun Context.sectionTitle(s: String) = text(T.ROW, s = s).apply { setPadding(dp(4), dp(28), 0, dp(12)) }
+fun Context.sectionTitle(s: CharSequence) = text(T.ROW, s = s).apply { setPadding(dp(4), dp(28), 0, dp(12)) }
 
 /** A 4dp progress line: white at 30% under an amber fill, rounded ends, no gap or stop dot. */
 fun Context.progressLine() = LinearProgressIndicator(this).apply {

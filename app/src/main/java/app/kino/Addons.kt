@@ -139,12 +139,16 @@ object Addons {
         throw last ?: IllegalStateException("No addon has details for $id")
     }
 
-    /** Streams from every addon that serves them, in addon order. A slow or broken addon only loses its own rows. */
-    fun streams(ctx: Context, type: String, videoId: String): List<Stream> =
-        list(ctx).filter { it.serves("stream", type, videoId) }.map { a ->
-            Net.fan.submit(Callable {
-                val arr = JSONObject(Net.get("${a.base}/stream/$type/${enc(videoId)}.json")).optJSONArray("streams") ?: JSONArray()
-                List(arr.length()) { Stream.from(a.name, arr.getJSONObject(it)) }.filterNotNull()
-            })
-        }.flatMap { runCatching { it.get(25, TimeUnit.SECONDS) }.getOrDefault(emptyList()) }
+    /** The addons that serve streams for this video, in the user's order. */
+    fun streamSources(ctx: Context, type: String, videoId: String) = list(ctx).filter { it.serves("stream", type, videoId) }
+
+    /**
+     * One addon's playable streams, plus how many results it returned that Kino can't play (torrents, YouTube ids).
+     * Network; call off the main thread. A slow or broken addon only loses its own rows.
+     */
+    fun streams(a: Addon, type: String, videoId: String): Pair<List<Stream>, Int> {
+        val arr = JSONObject(Net.get("${a.base}/stream/$type/${enc(videoId)}.json")).optJSONArray("streams") ?: JSONArray()
+        val playable = List(arr.length()) { Stream.from(a.name, arr.getJSONObject(it)) }.filterNotNull()
+        return playable to arr.length() - playable.size
+    }
 }

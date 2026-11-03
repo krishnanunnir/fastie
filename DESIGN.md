@@ -174,7 +174,11 @@ All pages use the same system. Corners come from `Shape` (6dp for buttons, rows,
 - **Details:** the same hero as Home (a full-screen backdrop on TV, the logo sized to its own aspect, the ★ meta line, a 3-line synopsis), then Play and My List, then the season chips.
   - Season chips are pills: a hairline outline at rest, white 18% when selected, white when focused.
   - Episode rows show a 16:9 thumbnail (8dp corners) with a 3dp amber progress line. Under focus they get a raised fill and a 2dp white ring, and the text stays white.
-- **Streams:** a full-screen backdrop dimmed to 70% ground, with the title and episode line. Streams are grouped under addon section titles in list rows that invert to white under focus.
+- **Streams:** a full-screen backdrop dimmed to 70% ground, with the title and episode line.
+  - Each addon is asked on its own. Its section ("Torrentio  12", with the count in variant) opens as soon as it answers, in the user's addon order. Until all have answered, a status line ("8 streams so far · waiting on Comet") sits over an amber progress line showing how many have answered.
+  - Rows lead with a quality badge (4K, 1080p, 720p, SD) on container-highest, which turns ground when the row inverts to white under focus. Next comes the release name, tidied from its filename (up to 2 lines), then a Meta line: picture, source and sound tags, then size, seeders and origin ("DV · HDR · HEVC · WEB-DL · Atmos · 15.2 GB"). `StreamInfo` in Meta.kt does the parsing.
+  - Once two or more qualities show up, quality chips (All, 4K, 1080p…) filter the rows.
+  - The final status counts the streams and notes any torrent-only results it hid and any addons it couldn't reach.
 - **Settings:** section titles over list rows, in a column capped at 640dp.
 - **Search:** a 6dp field that gets a 2dp white stroke under focus, then the same poster rows as Home, including the widening focus.
 - **My List:** a grid of posters that scale to 1.06 under focus.
