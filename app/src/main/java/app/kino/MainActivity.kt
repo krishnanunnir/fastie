@@ -218,6 +218,9 @@ class MainActivity : Activity(), PosterHost {
         }.show()
     }
 
+    /** A dozen titles from the top of Home, for Search to suggest before you type. */
+    fun popular(): List<Item> = if (::home.isInitialized) home.popular() else emptyList()
+
     /** Called by Settings after the addon list or the account changes. */
     fun reloadHome() = home.reload()
 
@@ -398,6 +401,8 @@ class HomePage(private val a: MainActivity) {
     private fun myListRow(): Row? = Store.library(a).takeIf { it.isNotEmpty() }?.let { Row("My List", it) }
 
     fun refreshContinue() { if (catalogRows.isNotEmpty()) publish() }
+
+    fun popular() = catalogRows.take(3).flatMap { it.items }.distinctBy { it.id }.take(12)
 
     private fun publish() {
         val first = adapter.rows.isEmpty()

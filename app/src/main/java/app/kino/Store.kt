@@ -93,6 +93,19 @@ object Store {
 
     fun setExternalPlayer(ctx: Context, on: Boolean) = prefs(ctx, "settings").edit().putBoolean("external_player", on).apply()
 
+    // Recent searches, newest first.
+
+    fun recentSearches(ctx: Context): List<String> = runCatching {
+        org.json.JSONArray(prefs(ctx, "settings").getString("recent_searches", "[]")).let { a -> List(a.length()) { a.getString(it) } }
+    }.getOrDefault(emptyList())
+
+    fun addRecentSearch(ctx: Context, q: String) {
+        val list = (listOf(q) + recentSearches(ctx).filterNot { it.equals(q, true) }).take(8)
+        prefs(ctx, "settings").edit().putString("recent_searches", org.json.JSONArray(list).toString()).apply()
+    }
+
+    fun clearRecentSearches(ctx: Context) = prefs(ctx, "settings").edit().remove("recent_searches").apply()
+
     // The link each video last played from, reused for 3 hours (as long as TorBox links last) so Resume starts at once.
 
     private const val LINK_MS = 3 * 60 * 60 * 1000L

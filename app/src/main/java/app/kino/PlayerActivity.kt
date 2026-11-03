@@ -85,6 +85,7 @@ class PlayerActivity : Activity() {
         view = PlayerView(this).apply {
             this.player = this@PlayerActivity.player
             setShowSubtitleButton(true)
+            controllerAutoShow = false // controls on a tap, not over the first seconds
             setShowNextButton(false)
             setShowPreviousButton(false)
             setBackgroundColor(android.graphics.Color.BLACK)
@@ -189,32 +190,61 @@ class PlayerActivity : Activity() {
     private val received = java.util.concurrent.atomic.AtomicLong()
 
     /**
-     * Until the first frame draws: the poster over its dimmed backdrop, with an amber line and what the player is doing,
-     * so the wait reads as loading rather than a black screen.
+     * Until the first frame draws: the backdrop, dimmed and fading in from the left, with the poster and then the title's
+     * logo (or name), the episode, where it resumes, an amber line and what the player is doing. Laid out for landscape,
+     * which is how the player always runs.
      */
     private fun cover() = FrameLayout(this).apply {
         setBackgroundColor(C.ground)
         addView(ImageView(context).apply {
-            scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0.25f
+            scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0.5f
             Images.load(this, item.backgroundOrHub, resources.displayMetrics.widthPixels)
         }, FrameLayout.LayoutParams(-1, -1))
-        val pw = dp(if (isTv) 200 else 168)
-        val col = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL }
-        col.addView(ImageView(context).apply {
+        addView(View(context).apply {
+            background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(C.alpha(C.ground, 0.97f), C.alpha(C.ground, 0.85f), C.alpha(C.ground, 0.35f)))
+        }, FrameLayout.LayoutParams(-1, -1))
+
+        val short = minOf(resources.displayMetrics.widthPixels, resources.displayMetrics.heightPixels)
+        val ph = (short * 0.56f).toInt()
+        val row = LinearLayout(context).apply { gravity = Gravity.CENTER_VERTICAL }
+        row.addView(ImageView(context).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
             background = rounded(C.container, dp(Shape.M).toFloat())
             outlineProvider = MorphOutline(dp(Shape.M).toFloat()); clipToOutline = true
             elevation = dp(16).toFloat()
-            Images.load(this, item.posterOrHub, pw)
-        }, lp(pw, pw * 3 / 2))
-        col.addView(text(T.ROW, lines = 2, s = item.name).apply { gravity = Gravity.CENTER }, lp(pw + dp(80), -2).apply { topMargin = dp(20) })
-        if (season != null) col.addView(text(T.META, C.variant, s = "Season $season, Episode $episode").apply { setPadding(0, dp(4), 0, 0) }, lp(-2, -2))
+            Images.load(this, item.posterOrHub, ph * 2 / 3)
+        }, lp(ph * 2 / 3, ph))
+
+        val info = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+        val title = text(T.DISPLAY, lines = 2, s = item.name)
+        val logo = ImageView(context).apply {
+            adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_START
+            maxHeight = dp(if (isTv) 96 else 72); maxWidth = dp(if (isTv) 420 else 300); visibility = View.GONE
+        }
+        val logoUrl = item.logo ?: if (item.id.startsWith("tt")) "https://images.metahub.space/logo/medium/${item.id}/img" else null
+        Images.load(logo, logoUrl, dp(300), alpha = true) { ok -> logo.visibility = if (ok) View.VISIBLE else View.GONE; title.visibility = if (ok) View.GONE else View.VISIBLE }
+        info.addView(logo, lp(-2, -2))
+        info.addView(title, lp(-2, -2))
+        val resume = Store.progressFor(this@PlayerActivity, videoId)?.takeIf { !it.finished && it.position > 0 }?.position
+        val line = listOfNotNull(
+            season?.let { "Season $it, Episode $episode" },
+            resume?.let { "Resuming at ${clock(it)}" },
+        ).joinToString("  ·  ")
+        if (line.isNotEmpty()) info.addView(text(T.META, C.alpha(C.onSurface, 0.75f), s = line), lp(-2, -2).apply { topMargin = dp(10) })
         coverBar = progressLine().apply { isIndeterminate = true }
-        col.addView(coverBar, lp(pw, -2).apply { topMargin = dp(20) })
+        info.addView(coverBar, lp(dp(if (isTv) 360 else 260), -2).apply { topMargin = dp(24) })
         coverStatus = text(T.META, C.variant, s = "Connecting…")
-        col.addView(coverStatus, lp(-2, -2).apply { topMargin = dp(10) })
-        addView(col, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
+        info.addView(coverStatus, lp(-2, -2).apply { topMargin = dp(10) })
+        row.addView(info, lp(-2, -2).apply { marginStart = dp(if (isTv) 48 else 32) })
+        addView(row, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER_VERTICAL or Gravity.START).apply { marginStart = dp(if (isTv) 96 else 56) })
         coverView = this
+    }
+
+    /** 2770000 → "46:10", or "1:02:05" past the hour. */
+    private fun clock(ms: Long): String {
+        val t = ms / 1000
+        return if (t >= 3600) "%d:%02d:%02d".format(t / 3600, t / 60 % 60, t % 60) else "%d:%02d".format(t / 60, t % 60)
     }
 
     /**

@@ -32,6 +32,7 @@
         <activity android:name=".SignInActivity" android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".PlayerActivity"
+            android:screenOrientation="sensorLandscape"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|navigation"
             android:supportsPictureInPicture="false" />
     </application>

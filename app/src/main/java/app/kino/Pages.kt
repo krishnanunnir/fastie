@@ -10,9 +10,11 @@ import android.text.TextWatcher
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -22,18 +24,40 @@ import androidx.recyclerview.widget.RecyclerView
 
 private fun MainActivity.side() = dp(if (isTv) 48 else 16)
 
+/**
+ * Search: a pill field, then before you type your recent searches and what's popular on Home; while searching an amber
+ * line; then one poster grid merged across every addon that searches, with All / Movies / Series to narrow it.
+ */
 class SearchPage(private val a: MainActivity) {
     val view = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
-    private val box = a.textField("Search movies and series", R.drawable.ic_search)
+    private val grid = RecyclerView(a)
+    private val box = a.textField("Movies, series, anime", R.drawable.ic_search).apply {
+        val r = a.dp(26).toFloat()
+        setBoxCornerRadii(r, r, r, r)
+        endIconMode = com.google.android.material.textfield.TextInputLayout.END_ICON_CLEAR_TEXT
+        setEndIconTintList(android.content.res.ColorStateList.valueOf(C.variant))
+    }
     private val field = box.editText!!
-    private val status = a.text(T.BODY, C.variant)
-    private val adapter = RowsAdapter(object : PosterHost {
-        override fun open(item: Item, progress: Progress?) = openItem(a, item, null)
-    })
+    // While addons answer: the grid shows pulsing poster-shaped placeholders instead of a spinner or a line.
+    private val pulse = android.animation.ObjectAnimator.ofFloat(grid, View.ALPHA, 0.35f, 0.8f).apply {
+        duration = 700; repeatMode = android.animation.ValueAnimator.REVERSE; repeatCount = android.animation.ValueAnimator.INFINITE
+    }
+    private val recentBlock = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+    private val filters = LinearLayout(a)
+    private val label = a.groupTitle("")
+    private val empty = LinearLayout(a).apply {
+        orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; visibility = View.GONE
+        setPadding(a.dp(32), 0, a.dp(32), a.dp(120))
+    }
+    private val host = object : PosterHost { override fun open(item: Item, progress: Progress?) = openItem(a, item, null) }
     private var query = ""
+    private var results: List<Item> = emptyList()
+    private var filter = "all"
     private val run = Runnable { search(field.text.toString().trim()) }
 
     init {
+        val s = a.side()
+        view.addView(a.text(T.DISPLAY, s = "Search"), lp().apply { setMargins(s, a.dp(if (a.isTv) 32 else 16), s, a.dp(14)) })
         val top = LinearLayout(a).apply { gravity = Gravity.CENTER_VERTICAL }
         field.apply {
             textSize = if (a.isTv) 20f else 17f
@@ -54,23 +78,25 @@ class SearchPage(private val a: MainActivity) {
             top.addView(a.button("Voice", R.drawable.ic_mic) { runCatching { a.startActivityForResult(voice, VOICE) } },
                 lp(-2, -2).apply { marginStart = a.dp(12) })
         }
-        val s = a.side()
-        view.addView(top, lp().apply { setMargins(s, a.dp(if (a.isTv) 32 else 12), s, a.dp(8)) })
-        view.addView(status, lp().apply { setMargins(s, a.dp(24), s, 0) })
-        view.addView(RecyclerView(a).apply {
-            layoutManager = SnapRowsLayout(a)
-            adapter = this@SearchPage.adapter
-            itemAnimator = null
-            clipToPadding = false
-            setPadding(0, 0, 0, a.dp(136))
-        }, lp(-1, -1))
-        status.text = "Find a title across all your addons."
+        view.addView(top, lp().apply { setMargins(s, 0, s, 0) })
+        view.addView(recentBlock, lp().apply { setMargins(s, 0, s, 0) })
+        view.addView(HorizontalScrollView(a).apply { isHorizontalScrollBarEnabled = false; addView(filters) }, lp().apply { setMargins(s, a.dp(14), s, 0) })
+        view.addView(label, lp().apply { setMargins(s, 0, s, 0) })
+        val cell = a.posterWidth() + a.dp(if (a.isTv) 14 else 8)
+        grid.layoutManager = GridLayoutManager(a, ((a.resources.displayMetrics.widthPixels - 2 * s) / cell).coerceAtLeast(3))
+        grid.clipToPadding = false
+        grid.setPadding(s - a.dp(6), 0, s - a.dp(6), a.dp(136))
+        view.addView(grid, lp(-1, 0).apply { weight = 1f })
+        view.addView(empty, lp(-1, 0).apply { weight = 1f })
+        view.setPadding(0, a.topInset, 0, 0)
         view.setOnApplyWindowInsetsListener { v, insets ->
             @Suppress("DEPRECATION") v.setPadding(0, insets.systemWindowInsetTop, 0, 0); insets
         }
+        idle()
     }
 
     fun focus() {
+        if (query.isEmpty()) idle() // Home may have loaded more since
         field.requestFocus()
         if (!a.isTv) field.post { (a.getSystemService(InputMethodManager::class.java)).showSoftInput(field, 0) }
     }
@@ -79,27 +105,121 @@ class SearchPage(private val a: MainActivity) {
 
     fun voice(text: String) { field.setText(text); field.setSelection(text.length); field.removeCallbacks(run); run.run() }
 
+    /** Before you type: recent searches as chips, and what's popular on Home as posters. */
+    private fun idle() {
+        stopPulse()
+        filters.removeAllViews()
+        empty.visibility = View.GONE
+        recentBlock.removeAllViews()
+        val recent = Store.recentSearches(a)
+        if (recent.isNotEmpty()) {
+            recentBlock.addView(LinearLayout(a).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                addView(a.groupTitle("Recent"), LinearLayout.LayoutParams(0, -2, 1f))
+                addView(a.text(T.META, C.variant, s = "Clear").apply {
+                    setPadding(a.dp(12), a.dp(28), a.dp(4), a.dp(10)); isClickable = true; isFocusable = true
+                    setOnClickListener { Store.clearRecentSearches(a); idle() }
+                })
+            })
+            recentBlock.addView(com.google.android.material.chip.ChipGroup(a).apply {
+                chipSpacingHorizontal = a.dp(8); chipSpacingVertical = a.dp(8)
+                recent.forEach { q -> addView(a.chip(q) { field.setText(q); field.setSelection(q.length); field.removeCallbacks(run); run.run(); hideKeyboard() }) }
+            })
+        }
+        val popular = a.popular()
+        label.text = if (popular.isEmpty()) "" else "POPULAR NOW"
+        show(popular)
+    }
+
+    private fun show(items: List<Item>) {
+        stopPulse()
+        grid.adapter = PosterAdapter(items, host, fill = true)
+        grid.visibility = if (items.isEmpty()) View.GONE else View.VISIBLE
+        grid.isFocusable = items.isNotEmpty() // an empty grid would swallow D-pad focus invisibly
+    }
+
+    /** Poster-shaped placeholders, pulsing, until the first results land. */
+    private fun skeleton() {
+        filters.removeAllViews()
+        empty.visibility = View.GONE
+        label.text = "SEARCHING…"
+        val spans = (grid.layoutManager as GridLayoutManager).spanCount
+        grid.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+            override fun getItemCount() = spans * 3
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+                val w = (parent.width - parent.paddingLeft - parent.paddingRight) / spans
+                return object : RecyclerView.ViewHolder(View(parent.context).apply {
+                    background = rounded(C.container, a.dp(Shape.M).toFloat())
+                    layoutParams = RecyclerView.LayoutParams(-1, (w - a.dp(8)) * 3 / 2).apply { setMargins(a.dp(4), a.dp(4), a.dp(4), a.dp(4)) }
+                }) {}
+            }
+            override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {}
+        }
+        grid.visibility = View.VISIBLE
+        grid.isFocusable = false
+        if (!pulse.isStarted) pulse.start()
+    }
+
+    private fun stopPulse() { pulse.cancel(); grid.alpha = 1f }
+
+    /** A centred message in place of the grid: an icon, a line, and a hint. */
+    private fun message(title: String, hint: String) {
+        show(emptyList())
+        label.text = ""
+        empty.removeAllViews()
+        empty.addView(FrameLayout(a).apply {
+            background = rounded(C.container, a.dp(40).toFloat())
+            addView(ImageView(a).apply { setImageResource(R.drawable.ic_search); setColorFilter(C.variant) },
+                FrameLayout.LayoutParams(a.dp(34), a.dp(34), Gravity.CENTER))
+        }, lp(a.dp(80), a.dp(80)))
+        empty.addView(a.text(T.TITLE, s = title).apply { gravity = Gravity.CENTER }, lp(-2, -2).apply { topMargin = a.dp(20) })
+        empty.addView(a.text(T.BODY, C.variant, s = hint).apply { gravity = Gravity.CENTER }, lp(-2, -2).apply { topMargin = a.dp(8) })
+        empty.visibility = View.VISIBLE
+    }
+
+    private var pending = 0
+
+    /** All, Movies, Series (only the kinds present), narrowing the grid in place. */
+    private fun renderResults() {
+        val kinds = results.map { it.type }.distinct()
+        filters.removeAllViews()
+        if (kinds.size > 1) (listOf("all") + kinds).forEach { k ->
+            val name = when (k) { "all" -> "All"; "movie" -> "Movies"; "series" -> "Series"; else -> k.replaceFirstChar(Char::uppercase) }
+            filters.addView(a.chip(name) { filter = k; renderResults() }.apply { isSelected = k == filter }, lp(-2, -2).apply { marginEnd = a.dp(8) })
+        }
+        val shown = if (filter == "all") results else results.filter { it.type == filter }
+        label.text = "${shown.size} ${if (shown.size == 1) "RESULT" else "RESULTS"}" + if (pending > 0) "  ·  SEARCHING…" else ""
+        empty.visibility = View.GONE
+        show(shown)
+    }
+
     private fun search(q: String) {
         if (q == query) return
         query = q
-        if (q.length < 2) { adapter.set(emptyList()); status.text = "Find a title across all your addons."; status.visibility = View.VISIBLE; return }
-        status.text = "Searching for “$q”…"
-        status.visibility = View.VISIBLE
+        recentBlock.removeAllViews()
+        if (q.length < 2) { results = emptyList(); filter = "all"; return idle() }
         val catalogs = Addons.list(a).flatMap { it.searchCatalogs }
-        val slots = arrayOfNulls<Row>(catalogs.size)
+        if (catalogs.isEmpty()) return message("Nothing can search yet", "None of your addons can search. Add one in Settings.")
+        results = emptyList()
+        pending = catalogs.size
+        skeleton()
+        val slots = arrayOfNulls<List<Item>>(catalogs.size)
         var answered = 0
         catalogs.forEachIndexed { i, c ->
             a.load({ Addons.catalog(c, q) }) { r ->
                 if (q != query) return@load
-                val type = if (c.type == "movie") "Movies" else if (c.type == "series") "Series" else c.type.replaceFirstChar(Char::uppercase)
-                slots[i] = Row(if (catalogs.count { it.type == c.type } > 1) "$type · ${c.addon.name}" else type, r.getOrDefault(emptyList()))
-                adapter.set(slots.filterNotNull())
+                slots[i] = r.getOrDefault(emptyList())
                 answered++
-                status.visibility = if (adapter.rows.isEmpty()) View.VISIBLE else View.GONE
-                if (adapter.rows.isEmpty() && answered == catalogs.size) status.text = "Nothing found for “$q”. Try another spelling."
+                pending = catalogs.size - answered
+                // Every addon's results in one grid, in addon order, each title once.
+                results = slots.filterNotNull().flatten().distinctBy { it.id }
+                if (filter != "all" && results.none { it.type == filter }) filter = "all"
+                when {
+                    results.isNotEmpty() -> { renderResults(); if (answered == catalogs.size) Store.addRecentSearch(a, q) }
+                    answered == catalogs.size -> message("No matches for “$q”", "Check the spelling, or try the original title.")
+                }
             }
         }
-        if (catalogs.isEmpty()) status.text = "None of your addons can search. Add one in Settings."
     }
 
     companion object { const val VOICE = 7 }
