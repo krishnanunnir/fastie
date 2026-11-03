@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kino: your addons on the big screen</title>
+<meta name="description" content="Kino is a 5 MB app for Android TV and phones that plays what your Stremio addons find. Sign in to Nuvio, pick a title, press Play.">
+<meta name="theme-color" content="#08080A">
+<meta property="og:title" content="Kino">
+<meta property="og:description" content="A 5 MB app for Android TV and phones that plays what your Stremio addons find.">
+<meta property="og:image" content="shots/tv-home.jpg">
+<link rel="icon" href="kino-icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ground: #08080A;
+  --container: #17171A;
+  --container-high: #222226;
+  --text: #FFFFFF;
+  --variant: #A3A3AB;
+  --outline: #3A3A42;
+  --soft: #FFFFFF2E;
+  --amber: #FFB627;
+  --page: clamp(16px, 4vw, 64px);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scrollbar-color: var(--outline) var(--ground); }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--ground); color: var(--text); font: 400 18px/1.5 Roboto, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+::selection { background: var(--amber); color: var(--ground); }
+img { display: block; max-width: 100%; height: auto; }
+a { color: inherit; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; border-radius: 6px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+p { margin: 0; }
+
+/* Buttons: white means the one primary action, as in the app */
+.btn { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 22px; border-radius: 6px; font-weight: 700; font-size: 17px; text-decoration: none; background: var(--soft); color: var(--text); transition: background .15s, color .15s; }
+.btn:hover { background: #FFFFFF45; }
+.btn.primary { background: var(--text); color: var(--ground); }
+.btn.primary:hover { background: #E6E6EA; }
+.btn svg { width: 20px; height: 20px; flex: none; }
+
+/* Header */
+header { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 32px; padding: 14px var(--page); background: color-mix(in srgb, var(--ground) 88%, transparent); backdrop-filter: blur(12px); }
+header .logo img { height: 30px; width: auto; }
+header nav { display: flex; gap: 28px; margin-left: auto; font-weight: 500; font-size: 16px; }
+header nav a { text-decoration: none; color: #FFFFFF9E; transition: color .15s; }
+header nav a:hover { color: var(--text); }
+header .btn { min-height: 40px; padding: 0 16px; font-size: 15px; }
+@media (max-width: 760px) { header nav { display: none; } header .btn { margin-left: auto; } }
+
+/* The pinned three steps */
+.steps { position: relative; height: 320vh; }
+.stage { position: sticky; top: 58px; height: calc(100vh - 58px); min-height: 620px; display: grid; grid-template-columns: minmax(340px, 0.72fr) 1.28fr; gap: clamp(32px, 4vw, 72px); align-items: center; padding: 0 var(--page) 32px; }
+.pitch h1 { font-size: clamp(52px, 6.4vw, 96px); font-weight: 900; line-height: .95; letter-spacing: -0.035em; }
+.pitch h1 span { display: block; }
+.pitch .lede { margin-top: 22px; max-width: 30ch; font-size: clamp(18px, 1.4vw, 21px); color: #FFFFFFCC; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+.cta-note { margin-top: 12px; font-size: 14px; color: var(--variant); }
+
+.track { list-style: none; margin: 40px 0 0; padding: 0; display: grid; gap: 4px; max-width: 420px; }
+.track button { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 34px 1fr; gap: 0 12px; width: 100%; padding: 10px 0; cursor: pointer; }
+.track .n { font-weight: 900; font-size: 22px; line-height: 1.2; color: var(--outline); transition: color .3s; }
+.track .t { font-weight: 700; font-size: 19px; line-height: 1.3; color: var(--variant); transition: color .3s; }
+.track .d { grid-column: 2; font-size: 16px; line-height: 1.45; color: #FFFFFFB8; max-height: 0; overflow: hidden; opacity: 0; transition: max-height .45s cubic-bezier(.2,.8,.2,1), opacity .3s, margin .3s; }
+.track li.on .n { color: var(--amber); }
+.track li.on .t { color: var(--text); }
+.track li.on .d { max-height: 5em; opacity: 1; margin-top: 4px; }
+.track button:focus-visible { outline-offset: 2px; }
+
+.tv { position: relative; }
+.screen { position: relative; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; background: #000; box-shadow: 0 0 0 10px var(--container), 0 40px 80px -20px #000; }
+.screen img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transform: scale(1.025); transition: opacity .5s cubic-bezier(.2,.8,.2,1), transform .9s cubic-bezier(.2,.8,.2,1); }
+.screen img.on { opacity: 1; transform: none; }
+.tv::after { content: ""; display: block; width: 22%; height: 8px; margin: 22px auto 0; border-radius: 4px; background: var(--container-high); }
+.caption { margin-top: 14px; text-align: center; font-size: 13px; color: var(--variant); }
+.inline-shot { display: none; }
+
+@media (max-width: 900px) {
+  .steps { height: auto; }
+  .stage { position: static; height: auto; min-height: 0; display: block; padding: 40px var(--page) 24px; }
+  .tv { display: none; }
+  .track { max-width: none; gap: 40px; margin-top: 56px; }
+  .track button { cursor: default; padding: 0; }
+  .track .n { color: var(--amber); }
+  .track .t { color: var(--text); font-size: 22px; }
+  .track .d { max-height: none; opacity: 1; margin-top: 6px; }
+  .inline-shot { display: block; grid-column: 1 / -1; margin-bottom: 18px; border-radius: 8px; box-shadow: 0 0 0 6px var(--container); }
+  .mobile-caption { display: block; }
+}
+.mobile-caption { display: none; margin-top: 32px; font-size: 13px; color: var(--variant); }
+
+/* Sections after the sequence */
+section.band { padding: clamp(80px, 12vw, 160px) var(--page); }
+.band h2 { font-size: clamp(36px, 4.6vw, 64px); font-weight: 900; line-height: 1; letter-spacing: -0.03em; }
+.band .body { margin-top: 24px; max-width: 44ch; font-size: 19px; color: #FFFFFFCC; }
+
+.pocket { display: grid; grid-template-columns: auto 1fr; gap: clamp(40px, 7vw, 120px); align-items: center; position: relative; overflow: hidden; }
+.pocket::before { content: ""; position: absolute; left: -10%; top: 10%; width: 70%; height: 80%; background: radial-gradient(closest-side, #5A2A16AA, transparent); pointer-events: none; }
+.phone { position: relative; width: clamp(230px, 24vw, 340px); border-radius: 36px; overflow: hidden; box-shadow: 0 0 0 8px var(--container), 0 40px 80px -20px #000; }
+.facts { list-style: none; padding: 0; margin: 36px 0 0; display: grid; gap: 22px; max-width: 46ch; }
+.facts li { padding-top: 18px; border-top: 1px solid var(--outline); font-size: 17px; color: #FFFFFFB8; }
+.facts b { display: block; margin-bottom: 4px; font-size: 19px; color: var(--text); }
+@media (max-width: 760px) { .pocket { grid-template-columns: 1fr; } .phone { margin: 0 auto; } }
+
+.yours { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(40px, 6vw, 96px); align-items: start; border-top: 1px solid var(--outline); }
+.field { display: flex; align-items: center; gap: 14px; height: 64px; padding: 0 22px; border-radius: 32px; background: var(--container); box-shadow: inset 0 0 0 2px var(--text); font-size: 18px; color: #FFFFFFDD; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.field span { overflow: hidden; text-overflow: ellipsis; }
+.field svg { width: 22px; height: 22px; flex: none; color: var(--variant); }
+.field-note { margin: 12px 0 0 22px; font-size: 14px; color: var(--variant); }
+@media (max-width: 860px) { .yours { grid-template-columns: minmax(0, 1fr); } }
+
+.get { text-align: center; border-top: 1px solid var(--outline); }
+.get img.mark { width: 88px; height: 88px; margin: 0 auto 32px; }
+.get h2 { font-size: clamp(44px, 6vw, 88px); }
+.get .body { margin: 20px auto 0; }
+.get .cta { justify-content: center; margin-top: 36px; }
+.install { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; max-width: 1040px; margin: 72px auto 0; text-align: left; }
+.install h3 { font-size: 19px; font-weight: 700; margin-bottom: 8px; }
+.install p { font-size: 16px; color: #FFFFFFB8; }
+code { font: 500 15px/1 ui-monospace, "SF Mono", Menlo, monospace; padding: 3px 7px; border-radius: 6px; background: var(--container-high); color: var(--text); white-space: nowrap; }
+@media (max-width: 760px) { .install { grid-template-columns: 1fr; } }
+
+footer { padding: 40px var(--page) 56px; display: flex; flex-wrap: wrap; gap: 12px 32px; font-size: 14px; color: var(--variant); border-top: 1px solid var(--outline); }
+footer p:first-child { flex: 1 1 420px; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="#top" aria-label="Kino home"><img src="kino-logo.svg" alt="Kino" width="89" height="30"></a>
+  <nav aria-label="Sections">
+    <a href="#steps">How it works</a>
+    <a href="#phone">Phone</a>
+    <a href="#addons">Addons</a>
+    <a href="#get">Install</a>
+  </nav>
+  <a class="btn primary" href="https://github.com/krishnanunnir/kino/releases/latest">Download</a>
+</header>
+
+<main id="top">
+  <section class="steps" id="steps" aria-label="How Kino works">
+    <div class="stage">
+      <div class="pitch">
+        <h1><span>Title.</span> <span>Stream.</span> <span>Play.</span></h1>
+        <p class="lede">Kino is a 5 MB app for Android TV and phones that plays what your Stremio addons find.</p>
+        <div class="cta">
+          <a class="btn primary" href="https://github.com/krishnanunnir/kino/releases/latest">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+            Download the APK
+          </a>
+          <a class="btn" href="https://github.com/krishnanunnir/kino">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.46-1.11-1.46-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
+            Source
+          </a>
+        </div>
+        <p class="cta-note">Free and open source. Android 6.0 and up.</p>
+
+        <ol class="track">
+          <li class="on">
+            <button type="button" data-step="0">
+              <span class="n">1</span><span class="t">Pick a title</span>
+              <img class="inline-shot" src="shots/tv-home.jpg" alt="Kino's TV home: the focused title's art fills the screen above a row of posters" loading="lazy" width="1600" height="900">
+              <span class="d">The title you're on fills the screen. Every page works with the remote.</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" data-step="1">
+              <span class="n">2</span><span class="t">Kino picks the stream</span>
+              <img class="inline-shot" src="shots/tv-details.jpg" alt="A title page in Kino with Play, My List and the best stream for the TV listed under them" loading="lazy" width="1600" height="900">
+              <span class="d">Play takes the best stream for your screen. The others are listed right under it.</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" data-step="2">
+              <span class="n">3</span><span class="t">Play</span>
+              <img class="inline-shot" src="shots/tv-play-ui.jpg" alt="Kino's player with an amber progress bar, skip buttons, subtitles and settings" loading="lazy" width="1600" height="900">
+              <span class="d">Subtitles, audio tracks and resume, in Kino's player or in VLC, mpv or Just Player.</span>
+            </button>
+          </li>
+        </ol>
+        <p class="mobile-caption">Real screenshots from Kino on Android TV. Playback shows Tears of Steel (Blender Foundation, CC BY).</p>
+      </div>
+
+      <figure class="tv" aria-hidden="true">
+        <div class="screen">
+          <img class="on" src="shots/tv-home.jpg" alt="" width="1600" height="900">
+          <img src="shots/tv-details.jpg" alt="" width="1600" height="900">
+          <img src="shots/tv-play-ui.jpg" alt="" width="1600" height="900">
+        </div>
+        <figcaption class="caption">Real screenshots from Kino on Android TV. Playback shows Tears of Steel (Blender Foundation, CC BY).</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="band pocket" id="phone">
+    <img class="phone" src="shots/phone-home.jpg" alt="Kino's phone home: a large floating card for the first title with Play and My List, rows of posters below" loading="lazy" width="720" height="1600">
+    <div>
+      <h2>The same couch, in your pocket.</h2>
+      <p class="body">One APK runs on your TV and your phone. Sign in to your Nuvio account and both pick up where you left off.</p>
+      <ul class="facts">
+        <li><b>Your addons come with you</b>Nuvio brings your addon list, My List and Continue Watching.</li>
+        <li><b>Sign in with a code on TV</b>A code appears on screen. Enter it at nuvio.tv/link on your phone. Email and password work too.</li>
+        <li><b>No account needed</b>Kino works on its own. Nuvio is optional.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="band yours" id="addons">
+    <div>
+      <h2>Your addons. Not ours.</h2>
+      <p class="body">Kino ships no streams. A fresh install comes with Cinemeta for catalogs and details. Streams come from the addons you add.</p>
+    </div>
+    <div>
+      <div class="field" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>
+        <span>https://your-addon.example/manifest.json</span>
+      </div>
+      <p class="field-note">Settings → Add an addon, then paste its link.</p>
+      <ul class="facts">
+        <li><b>Any Stremio addon</b>Kino speaks the same addon protocol, so the links you already use work.</li>
+        <li><b>About 5 MB</b>Plain Android Views and the platform's own networking. Fast on cheap TV boxes.</li>
+        <li><b>Plays the hard formats</b>Media3 ExoPlayer, with FFmpeg for DTS, TrueHD and AC3 when the device can't.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="band get" id="get">
+    <img class="mark" src="kino-icon.svg" alt="" width="88" height="88">
+    <h2>Get Kino.</h2>
+    <p class="body">One APK for Android TV and phones. Free, open source, MIT licensed.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/krishnanunnir/kino/releases/latest">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+        Download the APK
+      </a>
+      <a class="btn" href="https://github.com/krishnanunnir/kino">View the source</a>
+    </div>
+    <div class="install">
+      <div><h3>On a phone</h3><p>Open the APK from your downloads and allow installs from your browser when Android asks.</p></div>
+      <div><h3>On a TV</h3><p>Use a downloader app with the release link, or from a computer run <code>adb install kino.apk</code>.</p></div>
+      <div><h3>Then</h3><p>Sign in to Nuvio, or add an addon in Settings. You'll be watching in a couple of minutes.</p></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>Kino hosts no content and isn't affiliated with Nuvio or Stremio. Title art in the screenshots comes from Cinemeta and belongs to its owners.</p>
+  <p><a href="https://github.com/krishnanunnir/kino">GitHub</a> · <a href="https://github.com/krishnanunnir/kino/blob/main/LICENSE">MIT License</a></p>
+</footer>
+
+<script>
+// Scroll position inside the tall .steps section picks the lit step; the TV frame stays pinned.
+(() => {
+  const section = document.getElementById('steps');
+  const items = [...section.querySelectorAll('.track li')];
+  const shots = [...section.querySelectorAll('.screen img')];
+  const wide = matchMedia('(min-width: 901px)');
+  let current = 0;
+  const show = (i) => {
+    if (i === current) return;
+    current = i;
+    items.forEach((li, k) => li.classList.toggle('on', k === i));
+    shots.forEach((img, k) => img.classList.toggle('on', k === i));
+  };
+  const onScroll = () => {
+    if (!wide.matches) return;
+    const r = section.getBoundingClientRect();
+    const p = -r.top / (section.offsetHeight - innerHeight);
+    show(Math.max(0, Math.min(2, Math.floor(p * 3))));
+  };
+  addEventListener('scroll', onScroll, { passive: true });
+  wide.addEventListener('change', onScroll);
+  items.forEach((li, i) => li.querySelector('button').addEventListener('click', () => {
+    if (!wide.matches) return;
+    const span = section.offsetHeight - innerHeight;
+    scrollTo({ top: section.offsetTop + span * (i + 0.5) / 3 });
+  }));
+  onScroll();
+})();
+</script>
+</body>
+</html>
