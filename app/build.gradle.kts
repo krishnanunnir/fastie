@@ -15,6 +15,8 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1"
+        // FFmpeg is native code; ARM covers nearly every TV box and phone.
+        ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
     }
 
     // F-Droid rejects AGP's encrypted dependency metadata in the APK signing block.
@@ -59,10 +61,12 @@ android {
 
 dependencies {
     // The only real dependency: playback. RecyclerView comes with media3-ui.
-    val media3 = "1.5.1"
+    val media3 = "1.7.1" // what the FFmpeg build below is compiled against
     implementation("androidx.media3:media3-exoplayer:$media3")
     implementation("androidx.media3:media3-exoplayer-hls:$media3")
     implementation("androidx.media3:media3-ui:$media3")
+    // Software audio for what TV boxes can't decode themselves: DTS, TrueHD, AC3/EAC3. Jellyfin's build of the Media3 extension.
+    implementation("org.jellyfin.media3:media3-ffmpeg-decoder:1.6.1+2")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")

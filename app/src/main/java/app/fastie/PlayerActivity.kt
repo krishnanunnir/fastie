@@ -13,6 +13,7 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import org.json.JSONArray
@@ -49,7 +50,9 @@ class PlayerActivity : Activity() {
                 .setLanguage(s.optString("lang").ifBlank { null })
                 .build()
         }
-        player = ExoPlayer.Builder(this).setSeekBackIncrementMs(10_000).setSeekForwardIncrementMs(10_000).build()
+        // The device's own decoders first; FFmpeg only for audio they can't handle.
+        val renderers = DefaultRenderersFactory(this).setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+        player = ExoPlayer.Builder(this, renderers).setSeekBackIncrementMs(10_000).setSeekForwardIncrementMs(10_000).build()
         view = PlayerView(this).apply {
             this.player = this@PlayerActivity.player
             setShowSubtitleButton(true)
