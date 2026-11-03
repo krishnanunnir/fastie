@@ -1,6 +1,7 @@
 package app.kino
 
-import android.app.AlertDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import android.content.Intent
 import android.speech.RecognizerIntent
 import android.text.Editable
@@ -10,10 +11,10 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
-import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.TextView
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -21,7 +22,8 @@ private fun MainActivity.side() = dp(if (isTv) 48 else 16)
 
 class SearchPage(private val a: MainActivity) {
     val view = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
-    private val field = EditText(a)
+    private val box = a.textField("Search movies and series", R.drawable.ic_search)
+    private val field = box.editText!!
     private val status = a.text(T.BODY, C.variant)
     private val adapter = RowsAdapter(object : PosterHost {
         override fun open(item: Item, progress: Progress?) = openItem(a, item, null)
@@ -32,16 +34,8 @@ class SearchPage(private val a: MainActivity) {
     init {
         val top = LinearLayout(a).apply { gravity = Gravity.CENTER_VERTICAL }
         field.apply {
-            hint = "Search movies and series"
-            setHintTextColor(C.variant)
-            setTextColor(C.onSurface)
             textSize = if (a.isTv) 20f else 17f
-            isSingleLine = true
             imeOptions = EditorInfo.IME_ACTION_SEARCH
-            setPadding(a.dp(18), a.dp(14), a.dp(18), a.dp(14))
-            background = a.fieldBackground()
-            setCompoundDrawablesRelativeWithIntrinsicBounds(a.icon(R.drawable.ic_search).apply { setTint(C.variant) }, null, null, null)
-            compoundDrawablePadding = a.dp(12)
             addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, st: Int, c: Int, af: Int) {}
                 override fun onTextChanged(s: CharSequence?, st: Int, b: Int, c: Int) {}
@@ -51,7 +45,7 @@ class SearchPage(private val a: MainActivity) {
                 if (id == EditorInfo.IME_ACTION_SEARCH || e?.keyCode == KeyEvent.KEYCODE_ENTER) { removeCallbacks(run); run.run(); hideKeyboard(); true } else false
             }
         }
-        top.addView(field, LinearLayout.LayoutParams(0, -2, 1f))
+        top.addView(box, LinearLayout.LayoutParams(0, -2, 1f))
         // Remotes have a mic; typing with a D-pad is slow.
         val voice = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
         if (a.isTv && voice.resolveActivity(a.packageManager) != null) {
@@ -206,7 +200,7 @@ class SettingsPage(private val a: MainActivity) {
 
     private fun addonActions(addon: Addon) {
         val actions = arrayOf("Move up", "Move down", "Remove")
-        AlertDialog.Builder(a, android.R.style.Theme_DeviceDefault_Dialog_Alert).setTitle(addon.name).setItems(actions) { _, i ->
+        MaterialAlertDialogBuilder(a).setTitle(addon.name).setItems(actions) { _, i ->
             when (i) {
                 0 -> Addons.move(a, addon, -1)
                 1 -> Addons.move(a, addon, 1)
@@ -217,10 +211,11 @@ class SettingsPage(private val a: MainActivity) {
     }
 
     private fun addAddon() {
-        val input = EditText(a).apply { hint = "https://…/manifest.json"; isSingleLine = true; setPadding(a.dp(20), a.dp(16), a.dp(20), a.dp(16)) }
-        AlertDialog.Builder(a, android.R.style.Theme_DeviceDefault_Dialog_Alert).setTitle("Add an addon").setView(input)
+        val box = a.textField("https://…/manifest.json")
+        val form = FrameLayout(a).apply { setPadding(a.dp(24), a.dp(8), a.dp(24), 0); addView(box) }
+        MaterialAlertDialogBuilder(a).setTitle("Add an addon").setView(form)
             .setPositiveButton("Add") { _, _ ->
-                val url = input.text.toString()
+                val url = box.editText!!.text.toString()
                 if (url.isBlank()) return@setPositiveButton
                 a.say("Adding addon…")
                 a.load({ Addons.add(a, url) }) { r ->
@@ -231,18 +226,12 @@ class SettingsPage(private val a: MainActivity) {
     }
 }
 
-/** A snackbar: the one light surface, at the bottom, gone after a few seconds. */
+/** A snackbar: the one light surface, above the phone's bottom bar, gone after a few seconds. */
 fun MainActivity.say(message: String) {
-    val root = window.decorView as FrameLayout
-    root.findViewWithTag<View>("snack")?.let(root::removeView)
-    val bar = text(T.LABEL, C.onPrimary, lines = 2, s = message).apply {
-        tag = "snack"
-        background = rounded(C.inverse, dp(Shape.S).toFloat())
-        setTextColor(C.inverseOn)
-        setPadding(dp(18), dp(14), dp(18), dp(14))
-        elevation = dp(6).toFloat()
-    }
-    root.addView(bar, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = dp(96) })
-    bar.postDelayed({ root.removeView(bar) }, 3500)
+    Snackbar.make(findViewById(android.R.id.content), message, 3500).apply {
+        if (!isTv) anchorView = navBar
+        view.background = rounded(C.inverse, dp(Shape.S).toFloat())
+        view.findViewById<TextView>(com.google.android.material.R.id.snackbar_text).apply { styled(T.LABEL); setTextColor(C.inverseOn); maxLines = 2 }
+    }.show()
 }
 

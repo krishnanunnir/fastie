@@ -13,6 +13,8 @@ import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import org.json.JSONObject
@@ -26,8 +28,8 @@ class DetailsActivity : Activity() {
     private val meta by lazy { text(T.META, C.alpha(C.onSurface, 0.72f), lines = 2) }
     private val desc by lazy { text(T.BODY, C.alpha(C.onSurface, 0.82f), lines = if (isTv) 3 else 8) }
     private val seasons by lazy { LinearLayout(this) }
-    private lateinit var play: TextView
-    private lateinit var list: TextView
+    private lateinit var play: MaterialButton
+    private lateinit var list: MaterialButton
     private val episodes = mutableListOf<Video>()
     private var season = -1
     private lateinit var adapter: EpisodeAdapter
@@ -211,7 +213,7 @@ class DetailsActivity : Activity() {
                 outlineProvider = MorphOutline(dp(Shape.M).toFloat())
                 clipToOutline = true
                 addView(ImageView(ctx).apply { scaleType = ImageView.ScaleType.CENTER_CROP }, FrameLayout.LayoutParams(-1, -1))
-                addView(GapProgress(ctx), FrameLayout.LayoutParams(-1, dp(4), Gravity.BOTTOM).apply { setMargins(dp(10), 0, dp(10), dp(8)) })
+                addView(ctx.progressLine(), FrameLayout.LayoutParams(-1, dp(4), Gravity.BOTTOM).apply { setMargins(dp(10), 0, dp(10), dp(8)) })
             }
             row.addView(thumb, lp(tw, tw * 9 / 16))
             val texts = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), 0, 0, 0) }
@@ -231,7 +233,7 @@ class DetailsActivity : Activity() {
             (texts.getChildAt(0) as TextView).text = "${v.episode}.  ${v.title.ifBlank { "Episode ${v.episode}" }}"
             (texts.getChildAt(1) as TextView).text = v.overview
             val p = Store.progressFor(this@DetailsActivity, v.id)
-            val bar = thumb.getChildAt(1) as GapProgress
+            val bar = thumb.getChildAt(1) as LinearProgressIndicator
             bar.visibility = if (p != null && p.position > 0) View.VISIBLE else View.GONE
             if (p != null) bar.fraction = p.fraction.coerceAtLeast(0.04f)
             row.contentDescription = "Episode ${v.episode}, ${v.title}"

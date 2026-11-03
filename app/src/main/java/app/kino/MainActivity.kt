@@ -11,11 +11,14 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.google.android.material.button.MaterialButton
 import androidx.recyclerview.widget.RecyclerView
 
 /** Home, Search, My List and Settings, under tabs (TV) or over a bottom bar (phone). */
 class MainActivity : Activity(), PosterHost {
     private lateinit var pages: FrameLayout
+    lateinit var navBar: View
+        private set
     private val nav = mutableListOf<View>()
     private val views = arrayOfNulls<View>(4)
     private var page = -1
@@ -33,6 +36,7 @@ class MainActivity : Activity(), PosterHost {
         pages = FrameLayout(this)
         root.addView(pages, FrameLayout.LayoutParams(-1, -1))
         val bar = if (isTv) tabs() else bottomBar()
+        navBar = bar
         root.addView(bar)
         root.setOnApplyWindowInsetsListener { _, insets ->
             @Suppress("DEPRECATION")
@@ -219,7 +223,7 @@ class HomePage(private val a: MainActivity) {
     }
     private var catalogRows: List<Row> = emptyList()
     private var heroItem: Item? = null
-    private var listButton: TextView? = null
+    private var listButton: MaterialButton? = null
     private val pending = Runnable { pendingItem?.let(::showHero) }
     private var pendingItem: Item? = null
     private val screenW = a.resources.displayMetrics.widthPixels
@@ -410,11 +414,8 @@ class HomePage(private val a: MainActivity) {
     }
 }
 
-fun setListLabel(b: TextView, on: Boolean) {
+fun setListLabel(b: MaterialButton, on: Boolean) {
     b.text = if (on) "In My List" else "My List"
-    val d = b.context.icon(if (on) R.drawable.ic_check else R.drawable.ic_add).apply {
-        setBounds(0, 0, b.context.dp(22), b.context.dp(22)); setTintList(b.textColors)
-    }
-    b.setCompoundDrawablesRelative(d, null, null, null)
+    b.setIconResource(if (on) R.drawable.ic_check else R.drawable.ic_add)
 }
 

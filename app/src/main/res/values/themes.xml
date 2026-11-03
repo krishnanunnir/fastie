@@ -1,10 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Kino" parent="android:Theme.Material.NoActionBar">
+    <!-- Material 3 roles mapped onto Spotlight (C in Ui.kt): white is primary and focus, amber the one accent. -->
+    <style name="Kino" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:windowBackground">@color/ground</item>
         <item name="android:colorBackground">@color/ground</item>
-        <item name="android:colorAccent">@color/amber</item>
-        <item name="android:colorPrimary">@color/ground</item>
+        <item name="colorPrimary">@color/white</item>
+        <item name="colorOnPrimary">@color/ground</item>
+        <item name="colorSecondary">@color/amber</item>
+        <item name="colorOnSecondary">@color/ground</item>
+        <item name="colorSurface">@color/ground</item>
+        <item name="colorOnSurface">@color/white</item>
+        <item name="colorOnSurfaceVariant">@color/variant</item>
+        <item name="colorSurfaceContainerHigh">@color/container_high</item>
+        <item name="colorSurfaceInverse">@color/inverse</item>
+        <item name="colorOnSurfaceInverse">@color/ground</item>
+        <item name="colorOutline">@color/outline_variant</item>
+        <item name="colorOutlineVariant">@color/outline_variant</item>
         <item name="android:textColorHighlight">#66FFFFFF</item>
         <item name="android:textCursorDrawable">@null</item>
         <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="28" xmlns:tools="http://schemas.android.com/tools">shortEdges</item>

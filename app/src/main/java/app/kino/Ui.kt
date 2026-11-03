@@ -5,10 +5,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.content.res.Configuration
-import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Outline
-import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
@@ -23,6 +21,11 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.chip.Chip
+import com.google.android.material.progressindicator.LinearProgressIndicator
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 
 /**
  * Spotlight colour roles: a true-black ground, white as the focus colour, and amber, the only accent,
@@ -79,14 +82,20 @@ enum class T(val phone: Float, val tv: Float, val style: Int, val family: String
 }
 
 fun Context.text(style: T, color: Int = C.onSurface, lines: Int = 0, s: CharSequence? = null) = TextView(this).apply {
-    setTextSize(TypedValue.COMPLEX_UNIT_SP, if (isTv) style.tv else style.phone)
-    typeface = Typeface.create(style.family, style.style)
-    letterSpacing = style.tracking
+    styled(style)
     setTextColor(color)
-    includeFontPadding = false
-    setLineSpacing(0f, if (style == T.BODY) 1.25f else 1.1f)
     if (lines > 0) { maxLines = lines; ellipsize = TextUtils.TruncateAt.END }
     text = s
+}
+
+/** Applies [style] over whatever text appearance the widget (a Material one, say) brought. */
+fun TextView.styled(style: T) {
+    setTextSize(TypedValue.COMPLEX_UNIT_SP, if (context.isTv) style.tv else style.phone)
+    typeface = Typeface.create(style.family, style.style)
+    letterSpacing = style.tracking
+    isAllCaps = false
+    includeFontPadding = false
+    setLineSpacing(0f, if (style == T.BODY) 1.25f else 1.1f)
 }
 
 fun rounded(color: Int, radius: Float, stroke: Int = 0, strokeColor: Int = 0) = GradientDrawable().apply {
@@ -116,35 +125,31 @@ fun View.focusRing(radius: Float, gap: Int) {
 /**
  * A 6dp button. Phone: the one primary action rests white, the rest on white at 18%. Focus inverts to white with ground ink.
  */
-fun Context.button(label: String, iconRes: Int? = null, primary: Boolean = false, onClick: () -> Unit): TextView {
+fun Context.button(label: String, iconRes: Int? = null, primary: Boolean = false, onClick: () -> Unit): MaterialButton {
     val loud = primary && !isTv
-    val r = dp(6).toFloat()
-    val colors = ColorStateList(arrayOf(FOCUSED, intArrayOf()),
+    val ink = ColorStateList(arrayOf(FOCUSED, intArrayOf()),
         intArrayOf(C.onPrimary, if (loud) C.onPrimary else C.onSecondaryContainer))
-    return text(T.LABEL, s = label).apply {
-        gravity = Gravity.CENTER
-        isFocusable = true
-        isClickable = true
+    return MaterialButton(this).apply {
+        styled(T.LABEL)
+        text = label
         minHeight = dp(48)
+        insetTop = 0
+        insetBottom = 0
+        stateListAnimator = null
         setPadding(dp(18), dp(10), dp(22), dp(10))
-        background = StateListDrawable().apply {
-            addState(FOCUSED, rounded(C.primary, r))
-            addState(PRESSED, rounded(if (loud) 0xFFDDDDDD.toInt() else C.alpha(C.onSurface, 0.28f), r))
-            addState(intArrayOf(), rounded(if (loud) C.primary else C.secondaryContainer, r))
-        }
-        setTextColor(colors)
-        iconRes?.let {
-            val d = icon(it).apply { setBounds(0, 0, dp(22), dp(22)); setTintList(colors) }
-            setCompoundDrawablesRelative(d, null, null, null)
-            compoundDrawablePadding = dp(8)
-            // Stretched buttons (phone) would pin the icon to the edge, apart from the centred label.
-            addOnLayoutChangeListener { v, l, _, r, _, _, _, _, _ ->
-                val tv = v as TextView
-                val content = tv.paint.measureText(tv.text.toString()) + dp(22) + tv.compoundDrawablePadding
-                val side = ((r - l - content) / 2).toInt().coerceAtLeast(dp(18))
-                if (side != tv.paddingStart) tv.post { tv.setPaddingRelative(side, tv.paddingTop, side, tv.paddingBottom) }
-            }
-        }
+        cornerRadius = dp(6)
+        backgroundTintList = ColorStateList(arrayOf(FOCUSED, PRESSED, intArrayOf()), intArrayOf(
+            C.primary,
+            if (loud) 0xFFDDDDDD.toInt() else C.alpha(C.onSurface, 0.28f),
+            if (loud) C.primary else C.secondaryContainer))
+        rippleColor = ColorStateList.valueOf(C.alpha(C.onSurface, 0.12f))
+        setTextColor(ink)
+        iconTint = ink
+        iconSize = dp(22)
+        iconPadding = dp(8)
+        // Keeps the icon beside the label when the button is stretched (phone).
+        iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
+        iconRes?.let { icon = icon(it) }
         setOnClickListener { onClick() }
     }
 }
@@ -168,26 +173,45 @@ fun Context.listRow(title: String, sub: String? = null, onClick: (() -> Unit)?):
     if (onClick != null) { isFocusable = true; isClickable = true; setOnClickListener { onClick() } }
 }
 
-/** A text field: a 6dp surface with a 2dp white stroke under focus. */
-fun Context.fieldBackground() = StateListDrawable().apply {
-    addState(FOCUSED, rounded(C.containerHigh, dp(Shape.S).toFloat(), dp(2), C.onSurface))
-    addState(intArrayOf(), rounded(C.containerHigh, dp(Shape.S).toFloat()))
+/**
+ * A text field: a 6dp surface with a 2dp white stroke under focus. The hint stays inside the box
+ * rather than floating, since there is no room above it on TV. Read and listen through [TextInputLayout.getEditText].
+ */
+fun Context.textField(hint: String, iconRes: Int? = null) = TextInputLayout(this, null, com.google.android.material.R.attr.textInputOutlinedStyle).apply {
+    val r = dp(Shape.S).toFloat()
+    isHintEnabled = false
+    boxBackgroundColor = C.containerHigh
+    setBoxCornerRadii(r, r, r, r)
+    boxStrokeWidth = 0
+    boxStrokeWidthFocused = dp(2)
+    setBoxStrokeColorStateList(ColorStateList(arrayOf(FOCUSED, intArrayOf()), intArrayOf(C.onSurface, Color.TRANSPARENT)))
+    iconRes?.let { setStartIconDrawable(it); setStartIconTintList(ColorStateList.valueOf(C.variant)) }
+    addView(TextInputEditText(context).apply {
+        this.hint = hint
+        setHintTextColor(C.variant)
+        setTextColor(C.onSurface)
+        typeface = Typeface.DEFAULT // password fields otherwise fall back to monospace
+        isSingleLine = true
+        setPadding(dp(18), dp(14), dp(18), dp(14))
+    })
 }
 
 /** A pill chip: hairline at rest, white 18% when selected, white with ground ink under focus. */
-fun Context.chip(label: String, onClick: () -> Unit) = text(T.LABEL, s = label).apply {
-    isFocusable = true
-    isClickable = true
-    gravity = Gravity.CENTER
-    minHeight = dp(if (isTv) 40 else 44)
-    setPadding(dp(16), dp(8), dp(16), dp(8))
-    val r = dp(Shape.PILL).toFloat()
-    background = StateListDrawable().apply {
-        addState(FOCUSED, rounded(C.primary, r))
-        addState(SELECTED, rounded(C.secondaryContainer, r))
-        addState(intArrayOf(), rounded(Color.TRANSPARENT, r, dp(1), C.outlineVariant))
-    }
+fun Context.chip(label: String, onClick: () -> Unit) = Chip(this).apply {
+    styled(T.LABEL)
+    text = label
+    isCheckable = false
+    chipMinHeight = dp(if (isTv) 40 else 44).toFloat()
+    chipStartPadding = dp(8).toFloat()
+    chipEndPadding = dp(8).toFloat()
+    chipCornerRadius = dp(Shape.PILL).toFloat()
+    chipStrokeWidth = dp(1).toFloat()
+    // The chip's own hit-target inset would leave a gap above and below it.
+    setEnsureMinTouchTargetSize(false)
+    chipBackgroundColor = ColorStateList(arrayOf(FOCUSED, SELECTED, intArrayOf()), intArrayOf(C.primary, C.secondaryContainer, Color.TRANSPARENT))
+    chipStrokeColor = ColorStateList(arrayOf(FOCUSED, SELECTED, intArrayOf()), intArrayOf(C.primary, Color.TRANSPARENT, C.outlineVariant))
     setTextColor(ColorStateList(arrayOf(FOCUSED, SELECTED, intArrayOf()), intArrayOf(C.onPrimary, C.onSurface, C.variant)))
+    rippleColor = ColorStateList.valueOf(C.alpha(C.onSurface, 0.12f))
     setOnClickListener { onClick() }
 }
 
@@ -207,19 +231,20 @@ fun Context.metaText(item: Item, size: Float): CharSequence = android.text.Spann
 
 fun Context.sectionTitle(s: String) = text(T.ROW, s = s).apply { setPadding(dp(4), dp(28), 0, dp(12)) }
 
-/** A 4dp progress line: white at 30% under an amber fill, rounded ends. */
-class GapProgress(ctx: Context) : View(ctx) {
-    var fraction = 0f
-        set(v) { field = v.coerceIn(0f, 1f); invalidate() }
-    private val active = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = C.amber }
-    private val track = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = C.alpha(C.onSurface, 0.3f) }
-
-    override fun onDraw(canvas: Canvas) {
-        val r = height / 2f
-        canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), r, r, track)
-        canvas.drawRoundRect(0f, 0f, width * fraction, height.toFloat(), r, r, active)
-    }
+/** A 4dp progress line: white at 30% under an amber fill, rounded ends, no gap or stop dot. */
+fun Context.progressLine() = LinearProgressIndicator(this).apply {
+    max = 1000
+    trackThickness = dp(4)
+    trackCornerRadius = dp(2)
+    indicatorTrackGapSize = 0
+    trackStopIndicatorSize = 0
+    setIndicatorColor(C.amber)
+    trackColor = C.alpha(C.onSurface, 0.3f)
 }
+
+var LinearProgressIndicator.fraction: Float
+    get() = progress / 1000f
+    set(v) { progress = (v.coerceIn(0f, 1f) * 1000).toInt() }
 
 /** Left-to-right and bottom-up scrims, in the surface color, that keep type readable over any backdrop. */
 fun Context.backdrop(parent: FrameLayout, heightFraction: Float, bottom: Float = 0.55f): Pair<ImageView, ImageView> {

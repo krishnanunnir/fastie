@@ -12,6 +12,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
@@ -33,7 +34,7 @@ interface PosterHost {
 /** [wide] is the TV poster's 16:9 face (backdrop and name), shown while it has focus. */
 class PosterHolder(
     val card: FrameLayout, val image: ImageView, val title: TextView?, val name: TextView, val sub: TextView?,
-    val bar: GapProgress?, val wide: FrameLayout?, val still: ImageView?,
+    val bar: LinearProgressIndicator?, val wide: FrameLayout?, val still: ImageView?,
 ) : RecyclerView.ViewHolder(card)
 
 /**
@@ -83,7 +84,7 @@ class PosterAdapter(
         } else null
         val name = ctx.text(T.LABEL, lines = if (landscape) 1 else 2)
         var sub: TextView? = null
-        var bar: GapProgress? = null
+        var bar: LinearProgressIndicator? = null
         face?.apply {
             addView(View(ctx).apply {
                 background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, intArrayOf(0xD9000000.toInt(), 0x66000000, Color.TRANSPARENT))
@@ -93,7 +94,7 @@ class PosterAdapter(
             if (landscape) {
                 sub = ctx.text(T.META, C.alpha(C.onSurface, 0.75f), lines = 1).apply { setPadding(0, ctx.dp(3), 0, 0) }
                 caption.addView(sub)
-                bar = GapProgress(ctx)
+                bar = ctx.progressLine()
                 addView(bar, FrameLayout.LayoutParams(-1, ctx.dp(4), Gravity.BOTTOM).apply { setMargins(inset, 0, inset, ctx.dp(8)) })
             } else {
                 name.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 20f)

@@ -107,7 +107,7 @@ The title you're on gets the whole screen. On TV the focused title's backdrop fi
 
 The user chose this direction on 2026-11-03 from three home mockups (`mockups/home.html`, option C), replacing both the Netflix-style "Marquee" system and the Material You "Tonal" work in progress. Brand commitments from PRODUCT.md still hold: a dark living-room ground, horizontal poster rows, no Netflix red or marks.
 
-The system is still built from platform Views and `GradientDrawable`s, with no Material Components, no Compose and no font downloads. Light is a feature.
+The system is built from platform Views plus Material Components (added 2026-11-03, about +1.5 MB): buttons, chips, text fields, progress lines, dialogs and the snackbar are MDC widgets restyled to Spotlight through the theme and `Ui.kt`. Cards, rows, tabs and the hero stay hand-built. No Compose and no font downloads. Light is still a feature.
 
 **Key characteristics:**
 - True-black ground (#08080A) with flat tonal containers. Depth comes from scrims, not shadows (the phone hero card's elevation is the one exception).
@@ -196,4 +196,5 @@ All pages use the same system. Corners come from `Shape` (6dp for buttons, rows,
 - Use amber for anything outside its budget.
 - Add borders to cards at rest, or shadows for depth.
 - Bring back a rail on TV or a focus-following hero on phone.
-- Add Material Components, Compose, Palette or a downloaded font.
+- Add Compose, Palette or a downloaded font.
+- Use an MDC widget at its stock style; map it onto Spotlight's roles first.

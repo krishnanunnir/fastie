@@ -8,7 +8,7 @@ android
 
 ## Stack
 
-Delegated (agreed in planning, 2026-11-02): native Kotlin with Android Views, no Compose, no React Native. Platform APIs for networking (`HttpURLConnection`), JSON (`org.json`) and storage. The only real dependency is Media3 ExoPlayer for in-app playback. Target: a release APK of about 3–5 MB. One APK serves phones and Android TV.
+Delegated (agreed in planning, 2026-11-02): native Kotlin with Android Views, no Compose, no React Native. Platform APIs for networking (`HttpURLConnection`), JSON (`org.json`) and storage. The only real dependency is Media3 ExoPlayer for in-app playback. Target: a release APK of about 3–5 MB. Material Components was added later (2026-11-03) for the widgets, taking the APK to about 5.4 MB. One APK serves phones and Android TV.
 
 ## Users
 

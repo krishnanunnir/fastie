@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.text.InputType
 import android.view.Gravity
 import android.view.View
-import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -62,7 +61,7 @@ class SignInActivity : Activity() {
         form.addView(password, lp(if (isTv) dp(480) else -1, -2).apply { bottomMargin = dp(14) })
         form.addView(button("Sign in", primary = true) {
             status.text = "Signing in…"
-            load({ Nuvio.signIn(this, email.text.toString(), password.text.toString()) }) { r ->
+            load({ Nuvio.signIn(this, email.editText!!.text.toString(), password.editText!!.text.toString()) }) { r ->
                 r.onSuccess { finishSignIn() }.onFailure {
                     status.text = if (it is HttpException && it.code in 400..401) "That email and password didn't match a Nuvio account."
                     else "Couldn't reach Nuvio. Check the connection and try again."
@@ -80,16 +79,9 @@ class SignInActivity : Activity() {
         startCode()
     }
 
-    private fun field(label: String, type: Int) = EditText(this).apply {
-        hint = label
-        inputType = type
-        typeface = Typeface.DEFAULT // password fields otherwise fall back to monospace
-        isSingleLine = true
-        setTextColor(C.onSurface)
-        setHintTextColor(C.variant)
-        setPadding(dp(18), dp(14), dp(18), dp(14))
-        background = fieldBackground()
-        gravity = Gravity.CENTER_VERTICAL
+    private fun field(label: String, type: Int) = textField(label).apply {
+        editText!!.inputType = type
+        editText!!.typeface = Typeface.DEFAULT // inputType resets it; password fields would fall back to monospace
     }
 
     private fun startCode() {

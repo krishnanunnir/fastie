@@ -1,6 +1,6 @@
 # Kino
 
-A very light way to watch what your Stremio-style addons provide, on Android TV and phones. One APK of about 1 MB.
+A very light way to watch what your Stremio-style addons provide, on Android TV and phones. One APK of about 5 MB.
 
 - **Netflix-style browsing.** As you move around, the title you're on fills the screen, with rows of posters below.
 - **Works with your addons.** Add any Stremio addon link, or sign in to your **Nuvio** account to bring your addons, My List and Continue Watching with you.
@@ -37,7 +37,7 @@ Release signing reads a git-ignored `keystore.properties` (`storeFile`, `storePa
 
 ### How it's built
 
-Plain Kotlin and Android Views; the platform's own HTTP, JSON and storage. The only real dependency is Media3 ExoPlayer. Files in `app/src/main/java/app/kino/`:
+Plain Kotlin and Android Views; the platform's own HTTP, JSON and storage. The real dependencies are Media3 ExoPlayer and Material Components. Files in `app/src/main/java/app/kino/`:
 
 | File | What it does |
 |---|---|
