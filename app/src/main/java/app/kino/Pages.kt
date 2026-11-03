@@ -1,4 +1,4 @@
-package app.fastie
+package app.kino
 
 import android.app.AlertDialog
 import android.content.Intent
@@ -184,14 +184,14 @@ class SettingsPage(private val a: MainActivity) {
 
         col.addView(a.sectionTitle("Playback"))
         val external = Store.externalPlayer(a)
-        row("Player: ${if (external) "another app" else "Fastie"}",
+        row("Player: ${if (external) "another app" else "Kino"}",
             if (external) "Streams open in VLC, mpv or any video app you choose." else "Plays here, with subtitles, audio tracks and resume.") {
             Store.setExternalPlayer(a, !external); refresh()
         }
 
         col.addView(a.sectionTitle("About"))
-        row("Fastie ${a.packageManager.getPackageInfo(a.packageName, 0).versionName}",
-            "Plays what your addons provide. Fastie hosts no content and isn't affiliated with Nuvio or Stremio.")
+        row("Kino ${a.packageManager.getPackageInfo(a.packageName, 0).versionName}",
+            "Plays what your addons provide. Kino hosts no content and isn't affiliated with Nuvio or Stremio.")
 
         if (keep >= 0) col.getChildAt(keep.coerceAtMost(col.childCount - 1))?.requestFocus()
     }

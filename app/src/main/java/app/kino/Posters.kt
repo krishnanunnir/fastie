@@ -1,4 +1,4 @@
-package app.fastie
+package app.kino
 
 import android.animation.ValueAnimator
 import android.content.Context

@@ -1,8 +1,8 @@
 ---
 version: 1
-slug: "app-src-main-java-app-fastie-homeactivity-kt"
-primary_target: "app/src/main/java/app/fastie/MainActivity.kt"
-related_targets: ["app/src/main/java/app/fastie/Posters.kt", "app/src/main/java/app/fastie/Ui.kt"]
+slug: "app-src-main-java-app-kino-homeactivity-kt"
+primary_target: "app/src/main/java/app/kino/MainActivity.kt"
+related_targets: ["app/src/main/java/app/kino/Posters.kt", "app/src/main/java/app/kino/Ui.kt"]
 ---
 
 # Home and browse (TV-first, phone too)

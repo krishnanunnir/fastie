@@ -1,11 +1,11 @@
-# Renders Fastie's TV banner (320x180dp at xhdpi = 640x360): amber bolt + "fastie" wordmark on the ground colour.
+# Renders Kino's TV banner (320x180dp at xhdpi = 640x360): amber bolt + "kino" wordmark on the ground colour.
 import sys
 from PIL import Image, ImageDraw, ImageFont
 W, H = 640, 360
 img = Image.new("RGB", (W, H), (15, 15, 17))
 d = ImageDraw.Draw(img)
 font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 132)
-text = "fastie"
+text = "kino"
 tw = d.textlength(text, font=font)
 bolt_h = 150; s = bolt_h / 20.0
 bolt_w = 10 * s

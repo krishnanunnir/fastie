@@ -11,5 +11,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "fastie"
+rootProject.name = "kino"
 include(":app")

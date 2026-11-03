@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "app.fastie"
+    namespace = "app.kino"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "app.fastie"
+        applicationId = "app.kino"
         minSdk = 23
         targetSdk = 35
         versionCode = 1

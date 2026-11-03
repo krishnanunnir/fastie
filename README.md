@@ -1,4 +1,4 @@
-# Fastie
+# Kino
 
 A very light way to watch what your Stremio-style addons provide, on Android TV and phones. One APK of about 1 MB.
 
@@ -7,19 +7,19 @@ A very light way to watch what your Stremio-style addons provide, on Android TV 
 - **Three steps to playing.** Pick a title, pick a stream, play. Resume where you stopped, on any device.
 - **TV first.** Everything works with a remote. Voice search works on remotes with a mic.
 
-Fastie hosts no content and isn't affiliated with Nuvio or Stremio. A fresh install comes with Cinemeta (catalogs and details only); streams come from addons you add.
+Kino hosts no content and isn't affiliated with Nuvio or Stremio. A fresh install comes with Cinemeta (catalogs and details only); streams come from addons you add.
 
 ## Install
 
-Download the APK from Releases and open it on your phone or TV. On a TV, a downloader app or `adb install fastie.apk` works.
+Download the APK from Releases and open it on your phone or TV. On a TV, a downloader app or `adb install kino.apk` works.
 
 ## Using it
 
 - **Sign in to Nuvio:** Settings → Sign in to Nuvio. A code appears; open nuvio.tv/link on your phone and enter it. Or use your email and password.
 - **Add an addon:** Settings → Add an addon, then paste the addon's `manifest.json` link.
-- **Use another player:** Settings → Player switches between Fastie's player and any video app you have (VLC, mpv, Just Player).
+- **Use another player:** Settings → Player switches between Kino's player and any video app you have (VLC, mpv, Just Player).
 
-Fastie plays direct stream links. Torrent-only results are hidden, because Fastie doesn't ship a torrent engine.
+Kino plays direct stream links. Torrent-only results are hidden, because Kino doesn't ship a torrent engine.
 
 ## Building
 
@@ -37,7 +37,7 @@ Release signing reads a git-ignored `keystore.properties` (`storeFile`, `storePa
 
 ### How it's built
 
-Plain Kotlin and Android Views; the platform's own HTTP, JSON and storage. The only real dependency is Media3 ExoPlayer. Files in `app/src/main/java/app/fastie/`:
+Plain Kotlin and Android Views; the platform's own HTTP, JSON and storage. The only real dependency is Media3 ExoPlayer. Files in `app/src/main/java/app/kino/`:
 
 | File | What it does |
 |---|---|

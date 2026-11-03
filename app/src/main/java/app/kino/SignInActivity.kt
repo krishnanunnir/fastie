@@ -1,4 +1,4 @@
-package app.fastie
+package app.kino
 
 import android.app.Activity
 import android.content.Intent
@@ -32,7 +32,7 @@ class SignInActivity : Activity() {
             setPadding(side, dp(if (isTv) 56 else 72), side, dp(48))
         }
         col.addView(text(T.DISPLAY, s = "Sign in to Nuvio"))
-        col.addView(text(T.BODY, C.variant, s = "Your addons, My List and Continue Watching come with you. Fastie is an unofficial Nuvio client.")
+        col.addView(text(T.BODY, C.variant, s = "Your addons, My List and Continue Watching come with you. Kino is an unofficial Nuvio client.")
             .apply { setPadding(0, dp(10), 0, dp(28)) })
 
         hint = text(T.BODY, s = "Getting a sign-in code…")

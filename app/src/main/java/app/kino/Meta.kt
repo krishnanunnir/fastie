@@ -1,4 +1,4 @@
-package app.fastie
+package app.kino
 
 import org.json.JSONArray
 import org.json.JSONObject
@@ -70,7 +70,7 @@ class Video(val id: String, val title: String, val season: Int, val episode: Int
 
 class Stream(val addon: String, val name: String, val title: String, val url: String, val subtitles: List<Pair<String, String>>) {
     companion object {
-        /** Null for streams Fastie can't play: torrents (infoHash) and YouTube ids need engines we don't ship. */
+        /** Null for streams Kino can't play: torrents (infoHash) and YouTube ids need engines we don't ship. */
         fun from(addon: String, o: JSONObject): Stream? {
             val url = o.str("url") ?: return null
             val subs = o.optJSONArray("subtitles")?.let { a ->

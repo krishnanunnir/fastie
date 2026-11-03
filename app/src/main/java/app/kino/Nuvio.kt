@@ -1,4 +1,4 @@
-package app.fastie
+package app.kino
 
 import android.content.Context
 import android.os.Build
@@ -71,7 +71,7 @@ object Nuvio {
     fun startTvLogin(ctx: Context): TvCode {
         val nonce = UUID.randomUUID().toString()
         val params = JSONObject().put("p_device_nonce", nonce).put("p_redirect_base_url", "https://nuvio.tv/link")
-            .put("p_device_name", "Fastie on ${Build.MODEL}").put("p_device_type", "mobile")
+            .put("p_device_name", "Kino on ${Build.MODEL}").put("p_device_type", "mobile")
         val r = JSONArray(Net.post("${backend(ctx)}/rest/v1/rpc/start_device_login_session", params.toString(), anonHeaders(ctx)))
             .getJSONObject(0)
         return TvCode(r.getString("device_code"), r.getString("user_code"), r.getString("verification_uri_complete"),

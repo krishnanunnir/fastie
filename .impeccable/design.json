@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-11-03T00:00:00Z",
-  "title": "Design System: Fastie",
+  "title": "Design System: Kino",
   "extensions": {
     "colorMeta": {
       "ground": {
@@ -141,7 +141,7 @@
       },
       "amber": {
         "role": "primary",
-        "displayName": "Fastie Amber",
+        "displayName": "Kino Amber",
         "canonical": "#FFB627",
         "tonalRamp": [
           "#4C3300",
@@ -314,7 +314,7 @@
   ],
   "narrative": {
     "northStar": "The Living-Room Marquee",
-    "overview": "The poster you're on is the whole screen. Fastie plays the streaming-category canon straight, with Netflix's TV app as the bar: a near-black ground, the focused title's backdrop filling the top of the screen behind left and bottom scrims, and horizontal rows of 2:3 posters below. Chrome recedes; artwork, title logos and white type carry everything. The only colour the app owns is one amber, and it is spent sparingly.\n\nThe system is built from platform Android Views and a handful of `GradientDrawable`s: no Material Components, no Compose, no custom fonts. Lightness is a visual constraint as much as an engineering one. Every surface is a flat tonal step on the ground, every state is a drawable swap, and the only motion is a 150ms focus scale and a 400ms backdrop crossfade. The same code renders TV (D-pad, read from 3 m) and phone (touch), with deliberate differences in navigation, hero behaviour and type size.\n\nRejected by the brief and absent from the build: the grid-of-cards dashboard, the settings-heavy \"media center\" look, and Netflix's red or marks.",
+    "overview": "The poster you're on is the whole screen. Kino plays the streaming-category canon straight, with Netflix's TV app as the bar: a near-black ground, the focused title's backdrop filling the top of the screen behind left and bottom scrims, and horizontal rows of 2:3 posters below. Chrome recedes; artwork, title logos and white type carry everything. The only colour the app owns is one amber, and it is spent sparingly.\n\nThe system is built from platform Android Views and a handful of `GradientDrawable`s: no Material Components, no Compose, no custom fonts. Lightness is a visual constraint as much as an engineering one. Every surface is a flat tonal step on the ground, every state is a drawable swap, and the only motion is a 150ms focus scale and a 400ms backdrop crossfade. The same code renders TV (D-pad, read from 3 m) and phone (touch), with deliberate differences in navigation, hero behaviour and type size.\n\nRejected by the brief and absent from the build: the grid-of-cards dashboard, the settings-heavy \"media center\" look, and Netflix's red or marks.",
     "keyCharacteristics": [
       "Near-black ground (#0F0F11) with three flat tonal steps; no decorative shadows.",
       "Backdrop-led hero with left-to-right and bottom-up ground-coloured scrims.",

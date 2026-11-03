@@ -1,4 +1,4 @@
-package app.fastie
+package app.kino
 
 import org.json.JSONObject
 import org.junit.Assert.assertEquals

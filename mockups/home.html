@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fastie Home Directions</title>
+<title>Kino Home Directions</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Bebas+Neue&family=Playfair+Display:ital,wght@0,900;1,700&family=Archivo+Black&family=DM+Serif+Display&family=Oswald:wght@600&family=Anton&family=Cormorant+Garamond:ital,wght@1,700&display=swap" rel="stylesheet">
 <style>
@@ -252,7 +252,7 @@ html, body { margin:0; background:var(--page); color:var(--ink); font-family: Ro
 </head>
 <body>
 <div class="top">
-  <h1>Fastie home <span>· three directions, TV and phone</span></h1>
+  <h1>Kino home <span>· three directions, TV and phone</span></h1>
   <div class="tabs" role="tablist">
     <button role="tab" data-d="A" aria-selected="true">A · Marquee</button>
     <button role="tab" data-d="B">B · Tonal</button>
@@ -359,7 +359,7 @@ const ITEMS = [
   {t:'The Ninth Floor', y:2025, g:['Mystery','Thriller'], r:'7.5', d:'1 season', tag:'16+', f:'archivo', h:230, s:'Every tenant of an old apartment block remembers a ninth floor. The building has eight.'},
   {t:'Driftwood', y:2022, g:['Documentary'], r:'8.4', d:'1h 31m', tag:'All', f:'play', h:170, s:'One tree, washed from a riverbank to the open ocean, followed across four years and three continents.'},
 ];
-ITEMS.forEach((it, i) => { it.seed = 'fastie' + (i * 7 + 3); it.type = /season/.test(it.d) ? 'series' : 'movie'; });
+ITEMS.forEach((it, i) => { it.seed = 'kino' + (i * 7 + 3); it.type = /season/.test(it.d) ? 'series' : 'movie'; });
 const poster = (it, w=240, h=360) => `https://picsum.photos/seed/${it.seed}/${w}/${h}`;
 const still = (it, w=1280, h=720) => `https://picsum.photos/seed/${it.seed}/${w}/${h}`;
 const ROWS = [
@@ -406,7 +406,7 @@ function buildA(tv, ph) {
     <div class="hero">${logoHTML(f)}<div class="meta">${metaA(f)}</div><div class="syn">${f.s}</div></div>
     <div class="rowsWrap"><div class="rowsIn">${rowsHTML('track', cardA, cwPosterA)}</div></div>`;
   ph.innerHTML = `<div class="status"><span>9:41</span><span><i></i></span></div><div class="pscroll">
-    <div class="hero-ph">${backdrop('', f)}<div class="wm">fastie</div>
+    <div class="hero-ph">${backdrop('', f)}<div class="wm">kino</div>
       <div class="hero">${logoHTML(f)}<div class="meta">${metaA(f)}</div><div class="syn">${f.s}</div>
       <div class="btns"><div class="btn pri">${svg('play')}Play</div><div class="btn">${svg('plus')}My List</div></div></div></div>
     ${rowsHTML('hscroll', cardA, cwPosterA)}<div style="height:96px"></div></div>
@@ -424,7 +424,7 @@ function buildB(tv, ph) {
     <div class="heroCard">${backdrop('', f)}<div class="hero">${logoHTML(f)}<div class="chips">${metaB(f)}</div><div class="syn">${f.s}</div></div></div>
     <div class="rowsWrap"><div class="rowsIn">${rowsHTML('track', cardB, cwB)}</div></div>`;
   ph.innerHTML = `<div class="status"><span>9:41</span><span><i></i></span></div><div class="pscroll">
-    <div class="appbar"><div class="wm">${svg('bolt')}fastie</div><div class="ib">${svg('search')}</div></div>
+    <div class="appbar"><div class="wm">${svg('bolt')}kino</div><div class="ib">${svg('search')}</div></div>
     <div class="heroCard">${backdrop('', f)}<div class="hero">${logoHTML(f)}<div class="chips">${metaB(f)}</div>
       <div class="btns"><div class="btn pri">${svg('play')}Play</div><div class="btn ton">${svg('plus')}My List</div></div></div></div>
     ${rowsHTML('hscroll', cardB, cwB)}<div style="height:100px"></div></div>
@@ -440,13 +440,13 @@ function buildC(tv, ph) {
   tv._meta = metaC; ph._meta = metaC;
   const f = ITEMS[0];
   tv.innerHTML = `${backdrop('', f)}
-    <div class="topnav"><div class="wm">${svg('bolt')}fastie</div>${NAV.map((n,i) => `<div class="tab ni ${i==1?'on':''}">${i==0 ? svg('search') : ''}${i==0 ? '' : n[1]}</div>`).join('')}</div>
+    <div class="topnav"><div class="wm">${svg('bolt')}kino</div>${NAV.map((n,i) => `<div class="tab ni ${i==1?'on':''}">${i==0 ? svg('search') : ''}${i==0 ? '' : n[1]}</div>`).join('')}</div>
     <div class="hero">${logoHTML(f)}<div class="meta">${metaC(f)}</div><div class="syn">${f.s}</div></div>
     <div class="rowsWrap"><div class="rowsIn">${rowsHTML('track', cardC, cwC)}</div></div>`;
   const p = ITEMS[5];
   ph.style.setProperty('--hh', p.h);
   ph.innerHTML = `<div class="status"><span>9:41</span><span><i></i></span></div><div class="pscroll">
-    <div class="appbar"><div class="wm">${svg('bolt')}fastie</div>${svg('search')}</div>
+    <div class="appbar"><div class="wm">${svg('bolt')}kino</div>${svg('search')}</div>
     <div class="poster"><img alt="" src="${poster(p, 632, 900)}"><div class="pin">${logoHTML(p)}<div class="meta">${metaC(p)}</div>
       <div class="btns"><div class="btn pri">${svg('play')}Play</div><div class="btn sec">${svg('plus')}My List</div></div></div></div>
     ${rowsHTML('hscroll', cardCph, cwC)}<div style="height:96px"></div></div>
@@ -522,7 +522,7 @@ function fit() {
 document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', x === b));
   document.querySelectorAll('.dir').forEach(d => d.classList.toggle('on', d.id === b.dataset.d));
-  try { localStorage.setItem('fastie-dir', b.dataset.d); } catch (e) {}
+  try { localStorage.setItem('kino-dir', b.dataset.d); } catch (e) {}
   fit();
   // Rows were laid out while hidden; repaint focus offsets now they have size.
   document.querySelectorAll(`#${b.dataset.d} .tv`).forEach(tv => tv._key(''));
@@ -530,7 +530,7 @@ document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click
 addEventListener('resize', fit);
 document.fonts.ready.then(fit);
 fit();
-try { const d = localStorage.getItem('fastie-dir'); if (d) document.querySelector(`.tabs [data-d=${d}]`).click(); } catch (e) {}
+try { const d = localStorage.getItem('kino-dir'); if (d) document.querySelector(`.tabs [data-d=${d}]`).click(); } catch (e) {}
 </script>
 </body>
 </html>

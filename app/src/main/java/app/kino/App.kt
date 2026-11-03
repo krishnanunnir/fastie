@@ -1,4 +1,4 @@
-package app.fastie
+package app.kino
 
 import android.app.Application
 

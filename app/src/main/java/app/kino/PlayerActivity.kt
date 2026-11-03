@@ -1,4 +1,4 @@
-package app.fastie
+package app.kino
 
 import android.app.Activity
 import android.net.Uri
@@ -59,7 +59,7 @@ class PlayerActivity : Activity() {
             setShowNextButton(false)
             setShowPreviousButton(false)
             setBackgroundColor(android.graphics.Color.BLACK)
-            // The scrubber takes the theme's primary, like every other progress indicator in Fastie.
+            // The scrubber takes the theme's primary, like every other progress indicator in Kino.
             findViewById<androidx.media3.ui.DefaultTimeBar>(androidx.media3.ui.R.id.exo_progress)?.apply {
                 setPlayedColor(C.amber); setScrubberColor(C.amber); setBufferedColor(C.alpha(C.onSurface, 0.4f))
             }

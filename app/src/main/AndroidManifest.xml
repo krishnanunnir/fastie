@@ -12,10 +12,10 @@
         android:allowBackup="true"
         android:banner="@drawable/banner"
         android:icon="@mipmap/ic_launcher"
-        android:label="Fastie"
+        android:label="Kino"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
-        android:theme="@style/Fastie">
+        android:theme="@style/Kino">
 
         <activity
             android:name=".MainActivity"

@@ -1,5 +1,5 @@
 ---
-name: Fastie
+name: Kino
 description: A few-megabyte Stremio/Nuvio client in the Spotlight style, with a true-black ground, the focused title's art filling the screen, and white as the cursor.
 colors:
   ground: "#08080A"
@@ -97,7 +97,7 @@ components:
     textColor: "{colors.ground}"
 ---
 
-# Design System: Fastie
+# Design System: Kino
 
 ## Overview
 
@@ -124,7 +124,7 @@ The system is still built from platform Views and `GradientDrawable`s, with no M
 - **White 18%** (`C.secondaryContainer`): resting buttons and selected chips. It works over both art and ground.
 - **Amber** (#FFB627): `C.amber`. See the rule below.
 
-**The Amber Budget Rule.** Amber marks progress (cards, episode thumbnails, the player scrubber), the wordmark (bolt and "fastie"), and the current page (the TV tab's underline, the phone bar's icon and label). Nothing else, including focus, buttons, ratings and headings.
+**The Amber Budget Rule.** Amber marks progress (cards, episode thumbnails, the player scrubber), the wordmark (bolt and "kino"), and the current page (the TV tab's underline, the phone bar's icon and label). Nothing else, including focus, buttons, ratings and headings.
 
 **The White Means Focus Rule.** On TV, a solid white surface means focus. The phone's single primary action (Play) is the only exception.
 

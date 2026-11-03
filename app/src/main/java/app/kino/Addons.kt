@@ -1,4 +1,4 @@
-package app.fastie
+package app.kino
 
 import android.content.Context
 import org.json.JSONArray
@@ -72,7 +72,7 @@ object Addons {
         }.getOrNull().also { cache = it } ?: emptyList()
     }
 
-    /** First run: Cinemeta only. Fastie ships no stream sources. Network; call off the main thread. */
+    /** First run: Cinemeta only. Kino ships no stream sources. Network; call off the main thread. */
     fun ensureDefaults(ctx: Context) {
         if (file(ctx).exists()) return
         save(ctx, listOf(fetch(CINEMETA)))

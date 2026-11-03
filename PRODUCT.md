@@ -32,13 +32,13 @@ A Nuvio-compatible client that weighs a few megabytes. It reads the same Stremio
 
 - Core features: addon management, home catalog rows, search, details page (seasons and episodes), stream picker grouped by addon, in-app player (subtitles, audio tracks, resume), external player hand-off, continue watching, library, next episode, Nuvio account sign-in and sync, settings.
 - TV comes first: everything must be reachable by D-pad with a visible focus state; no screen may need touch.
-- Fastie ships no stream sources. A fresh install has Cinemeta (catalogs and metadata) only; streams come from addons the user adds or syncs from their Nuvio account.
-- The Nuvio backend is third-party. Its API can change or refuse unofficial clients; Fastie must keep working without an account.
+- Kino ships no stream sources. A fresh install has Cinemeta (catalogs and metadata) only; streams come from addons the user adds or syncs from their Nuvio account.
+- The Nuvio backend is third-party. Its API can change or refuse unofficial clients; Kino must keep working without an account.
 - Undecided: Trakt, watch party, multiple profiles beyond reading `profile_id` 1.
 
 ## Brand Commitments
 
-Name: **Fastie**. The user's stated idea: "beautiful and simple and easy to read, something like Netflix but with our streams."
+Name: **Kino** (renamed from Fastie on 2026-11-03). The user's stated idea: "beautiful and simple and easy to read, something like Netflix but with our streams."
 
 Standing preference (confirmed 2026-11-02): play the category standard straight, with Netflix's TV app as the bar. Dark living-room ground; the focused title's backdrop fills the top of the screen; horizontal poster rows; the focused poster scales up with a clean outline. Don't copy Netflix's red or its marks.
 
