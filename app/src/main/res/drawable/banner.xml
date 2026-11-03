@@ -1,0 +1,5 @@
+<!-- The TV banner (320 × 180dp): the Kino lockup centred on the ground colour. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item><color android:color="@color/ground" /></item>
+    <item android:drawable="@drawable/kino_logo" android:gravity="center" android:width="208dp" android:height="62dp" />
+</layer-list>

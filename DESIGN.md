@@ -124,7 +124,7 @@ The system is built from platform Views plus Material Components (added 2026-11-
 - **White 18%** (`C.secondaryContainer`): resting buttons and selected chips. It works over both art and ground.
 - **Amber** (#FFB627): `C.amber`. See the rule below.
 
-**The Amber Budget Rule.** Amber marks progress (cards, episode thumbnails, the player scrubber), the wordmark (bolt and "kino"), and the current page (the TV tab's underline, the phone bar's icon and label). Nothing else, including focus, buttons, ratings and headings.
+**The Amber Budget Rule.** Amber marks progress (cards, episode thumbnails, the player scrubber), the logo (the k and "kino"), and the current page (the TV tab's underline, the phone bar's icon and label). Nothing else, including focus, buttons, ratings and headings.
 
 **The White Means Focus Rule.** On TV, a solid white surface means focus. The phone's single primary action (Play) is the only exception.
 

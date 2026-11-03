@@ -283,9 +283,9 @@ fun crossfade(layers: Pair<ImageView, ImageView>, url: String?, width: Int) {
 fun lp(w: Int = ViewGroup.LayoutParams.MATCH_PARENT, h: Int = ViewGroup.LayoutParams.WRAP_CONTENT) = LinearLayout.LayoutParams(w, h)
 
 
-/** The amber bolt and "kino": the brand on the TV tab bar and the phone's home. */
+/** The Kino lockup, the k and "kino" in amber: the brand on the TV tab bar and the phone's home. */
 fun Context.wordmark() = LinearLayout(this).apply {
     gravity = Gravity.CENTER_VERTICAL
-    addView(ImageView(context).apply { setImageResource(R.drawable.ic_bolt); setColorFilter(C.amber) }, lp(dp(22), dp(22)))
-    addView(text(T.TITLE, C.amber, s = "kino").apply { setPadding(dp(4), 0, 0, 0) })
+    contentDescription = "Kino"
+    addView(ImageView(context).apply { setImageResource(R.drawable.kino_logo) }, lp(dp(94), dp(28)))
 }

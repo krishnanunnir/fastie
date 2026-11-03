@@ -52,4 +52,4 @@ Plain Kotlin and Android Views; the platform's own HTTP, JSON and storage. The r
 | `DetailsActivity.kt`, `StreamsActivity.kt`, `PlayerActivity.kt` | Title → stream → playback |
 | `Ui.kt`, `Posters.kt`, `Images.kt` | Palette, type, focus, poster rows, image cache |
 
-`PRODUCT.md` and `DESIGN.md` hold the product and design decisions. The TV banner is drawn by `tools/banner.py`.
+`PRODUCT.md` and `DESIGN.md` hold the product and design decisions. The logo lives in `assets/branding/`; the app's icon, TV banner and wordmark are vector copies of it in `res/drawable`.

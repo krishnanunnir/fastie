@@ -1,0 +1,13 @@
+<!-- The Kino lockup (assets/branding/kino-logo.svg), cropped to its ink: 1433 × 427, about 3.36:1. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="94dp" android:height="28dp" android:viewportWidth="1433" android:viewportHeight="427">
+    <group android:translateX="-370" android:translateY="-158">
+        <path android:fillColor="#FFB627" android:fillType="evenOdd"
+            android:pathData="M422 168H476Q518 168 518 210V334L585 274Q593 267 606 267H725Q744 267 738 286L616 418L738 550Q751 572 727 572H605Q592 572 582 561L518 500V530Q518 572 476 572H422Q380 572 380 530V210Q380 168 422 168ZM487 367Q478 362 478 375V468Q478 482 489 475L570 430Q582 423 570 416Z" />
+        <path android:fillColor="#FFB627" android:pathData="M823 204H906V403L997 304H1090L977 426L1091 566H990L906 460V566H823Z" />
+        <path android:fillColor="#FFB627" android:pathData="M1103 304H1186V566H1103Z" />
+        <path android:fillColor="#FFB627" android:pathData="M1097 241a47.5 47.5 0 1 0 95 0a47.5 47.5 0 1 0 -95 0Z" />
+        <path android:fillColor="#FFB627" android:pathData="M1213 304H1295V336Q1324 293 1376 293Q1481 293 1481 410V566H1397V417Q1397 372 1354 372Q1296 372 1296 436V566H1213Z" />
+        <path android:fillColor="#FFB627" android:fillType="evenOdd"
+            android:pathData="M1647 291C1735 291 1793 349 1793 433S1735 575 1647 575 1501 517 1501 433 1559 291 1647 291ZM1647 371C1610 371 1586 395 1586 433S1610 495 1647 495 1708 471 1708 433 1684 371 1647 371Z" />
+    </group>
+</vector>
