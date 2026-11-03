@@ -251,9 +251,12 @@ var LinearProgressIndicator.fraction: Float
 fun Context.backdrop(parent: FrameLayout, heightFraction: Float, bottom: Float = 0.55f): Pair<ImageView, ImageView> {
     val h = (resources.displayMetrics.heightPixels * heightFraction).toInt()
     val a = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
-    val b = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0f }
+    val b = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0f; visibility = View.INVISIBLE }
     val w = resources.displayMetrics.widthPixels
     listOf(a, b).forEach { parent.addView(it, FrameLayout.LayoutParams(w, h, Gravity.END or Gravity.TOP)) }
+    // TV: the scrims are painted into the backdrop itself (see [bakeScrims]), so the GPU fills one full-screen layer
+    // per frame instead of four; on a cheap box that difference is the stutter.
+    if (isTv) { a.setTag(R.id.scrim, bottom); b.setTag(R.id.scrim, bottom); return a to b }
     val g = C.ground
     parent.addView(View(this).apply {
         background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
@@ -269,15 +272,44 @@ fun Context.backdrop(parent: FrameLayout, heightFraction: Float, bottom: Float =
     return a to b
 }
 
-/** Crossfades the two backdrop layers to [url]. */
+/**
+ * The backdrop's scrims (left to right over 70% of the width, bottom up over [bottom] of the height, a little from the
+ * top for the tabs) painted into a copy of [src], in full colour so the dark gradients don't band. Off the main thread.
+ */
+fun bakeScrims(src: android.graphics.Bitmap, bottom: Float): android.graphics.Bitmap {
+    val out = src.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
+    val w = out.width.toFloat()
+    val h = out.height.toFloat()
+    val g = C.ground
+    val canvas = android.graphics.Canvas(out)
+    val paint = android.graphics.Paint(android.graphics.Paint.DITHER_FLAG)
+    fun fill(x0: Float, y0: Float, x1: Float, y1: Float, colors: IntArray, l: Float, t: Float, r: Float, b: Float) {
+        paint.shader = android.graphics.LinearGradient(x0, y0, x1, y1, colors, null, android.graphics.Shader.TileMode.CLAMP)
+        canvas.drawRect(l, t, r, b, paint)
+    }
+    fill(0f, 0f, w * 0.7f, 0f, intArrayOf(g, C.alpha(g, 0.94f), C.alpha(g, 0.7f), C.alpha(g, 0.25f), C.alpha(g, 0f)), 0f, 0f, w * 0.7f, h)
+    fill(0f, h, 0f, h * (1 - bottom), intArrayOf(g, C.alpha(g, 0.8f), C.alpha(g, 0f)), 0f, h * (1 - bottom), w, h)
+    fill(0f, 0f, 0f, h * 0.22f, intArrayOf(C.alpha(g, 0.7f), C.alpha(g, 0f)), 0f, 0f, w, h * 0.22f)
+    if (out !== src) src.recycle()
+    return out
+}
+
+/**
+ * Crossfades the two backdrop layers to [url]. On TV the art is decoded at half the screen's width: it sits dimmed under
+ * scrims, and a quarter of the pixels is what keeps a cheap box's GPU from stuttering as focus moves. The layer that has
+ * faded out is hidden rather than drawn at zero.
+ */
 fun crossfade(layers: Pair<ImageView, ImageView>, url: String?, width: Int) {
     val (a, b) = layers
     val (front, back) = if (a.alpha >= b.alpha) a to b else b to a
     if (front.tag == url) return
-    Images.load(back, url, width) { ok ->
+    val bottom = back.getTag(R.id.scrim) as? Float
+    Images.load(back, url, if (back.context.isTv) width / 2 else width,
+        transform = bottom?.let { f -> { bmp: android.graphics.Bitmap -> bakeScrims(bmp, f) } }, variant = bottom?.let { "#scrim$it" } ?: "") { ok ->
         if (!ok && url != null) return@load
+        back.visibility = View.VISIBLE
         back.animate().alpha(1f).setDuration(400).start()
-        front.animate().alpha(0f).setDuration(400).start()
+        front.animate().alpha(0f).setDuration(400).withEndAction { if (front.alpha == 0f) front.visibility = View.INVISIBLE }.start()
     }
 }
 

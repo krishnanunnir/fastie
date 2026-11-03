@@ -82,8 +82,8 @@ class PosterAdapter(
         }
         val image = ImageView(ctx).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
         art.addView(image, FrameLayout.LayoutParams(-1, -1))
-        // Landscape cards and the widened poster both carry a caption over a black scrim.
-        val face = if (landscape) art else if (tv && !fill) FrameLayout(ctx).apply { alpha = 0f; art.addView(this, FrameLayout.LayoutParams(-1, -1)) } else null
+        // Landscape cards carry a caption over a black scrim. Posters stay posters, even under focus.
+        val face = if (landscape) art else null
         val still = if (face != null && !landscape) ImageView(ctx).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
             face.addView(this, FrameLayout.LayoutParams(-1, -1))
@@ -137,59 +137,24 @@ class PosterAdapter(
             Images.load(h.image, item.posterOrHub, ctx.posterWidth())
         }
         // A recycled card may still be mid-widen; settle it to its rest (or focused) shape.
-        (h.card.getTag(R.id.spotlight) as? ValueAnimator)?.cancel()
-        if (h.wide != null) {
-            val on = h.card.isFocused
-            h.card.layoutParams.width = cardWidth(ctx, on)
-            h.wide.alpha = if (on) 1f else 0f
-        }
+        h.card.animate().cancel()
+        h.card.scaleX = if (h.card.isFocused) FOCUS_SCALE else 1f
+        h.card.scaleY = h.card.scaleX
         h.card.setOnClickListener { host.open(item, p) }
         // Long press (or holding OK on a remote): choose another stream, or start over.
         if (p != null) h.card.setOnLongClickListener { host.more(item, p); true } else h.card.setOnLongClickListener(null)
+        // Focus lifts the card a little (transform only, no relayout) and, in a TV row, glides the row so it leads.
         h.card.setOnFocusChangeListener { v, has ->
-            if (h.wide != null) spotlight(h, item, has)
-            else {
-                if (fill) v.animate().scaleX(if (has) 1.06f else 1f).scaleY(if (has) 1.06f else 1f).translationZ(if (has) 8f else 0f).setDuration(150).start()
-                else if (has) spotlight(h, item, true)
+            v.animate().scaleX(if (has) FOCUS_SCALE else 1f).scaleY(if (has) FOCUS_SCALE else 1f).setDuration(150).start()
+            if (has && !fill && ctx.isTv) (v.parent as? RecyclerView)?.let { rv ->
+                val lpm = v.layoutParams as ViewGroup.MarginLayoutParams
+                rv.smoothScrollBy(v.left - lpm.leftMargin - rv.paddingLeft, 0)
             }
             if (has) host.focused(item, row())
         }
     }
 
-    private fun cardWidth(ctx: Context, wide: Boolean): Int {
-        val (w, h) = size(ctx)
-        return (if (wide) h * 16 / 9 else w) + 2 * ctx.ringGap()
-    }
-
-    /**
-     * TV: the focused card slides to the row's start while a poster widens to 16:9 and fades in its backdrop;
-     * losing focus narrows it back. One animator drives width, fade and scroll so each frame lays out once.
-     */
-    private fun spotlight(h: PosterHolder, item: Item, on: Boolean) {
-        val card = h.card
-        val ctx = card.context
-        val rv = card.parent as? RecyclerView ?: return
-        val lm = rv.layoutManager as? LinearLayoutManager ?: return
-        if (on && h.still != null) Images.load(h.still, item.backgroundOrHub, cardWidth(ctx, true))
-        (card.getTag(R.id.spotlight) as? ValueAnimator)?.cancel()
-        val from = card.layoutParams.width
-        val to = if (h.wide != null) cardWidth(ctx, on) else from
-        val fade = h.wide?.alpha ?: 0f
-        val pos = h.bindingAdapterPosition
-        val lpm = card.layoutParams as ViewGroup.MarginLayoutParams
-        val start = card.left - lpm.leftMargin - rv.paddingLeft
-        card.setTag(R.id.spotlight, ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = 260
-            interpolator = EASE
-            addUpdateListener {
-                val f = it.animatedValue as Float
-                if (from != to) { card.layoutParams.width = (from + (to - from) * f).toInt(); card.requestLayout() }
-                h.wide?.alpha = fade + ((if (on) 1f else 0f) - fade) * f
-                if (on && pos != RecyclerView.NO_POSITION) lm.scrollToPositionWithOffset(pos, (start * (1 - f)).toInt())
-            }
-            start()
-        })
-    }
+    private companion object { const val FOCUS_SCALE = 1.04f }
 }
 
 /** "S1 · E4 · 31 min left", or just the time for a film. */

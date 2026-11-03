@@ -17,16 +17,22 @@ object Images {
     }
     private val io = Executors.newFixedThreadPool(4)
 
-    /** Decodes [url] at about [width] px into [view]; [alpha] keeps transparency (logos), else RGB_565 halves memory. */
-    fun load(view: ImageView, url: String?, width: Int, alpha: Boolean = false, done: ((Boolean) -> Unit)? = null) {
+    /**
+     * Decodes [url] at about [width] px into [view]; [alpha] keeps transparency (logos), else RGB_565 halves memory.
+     * [transform] runs on the decode thread before caching (under [variant] in the cache key), such as baking scrims in.
+     */
+    fun load(
+        view: ImageView, url: String?, width: Int, alpha: Boolean = false,
+        transform: ((Bitmap) -> Bitmap)? = null, variant: String = "", done: ((Boolean) -> Unit)? = null,
+    ) {
         view.tag = url
         if (url == null) { view.setImageDrawable(null); done?.invoke(false); return }
-        val key = "$url@$width"
+        val key = "$url@$width$variant"
         mem.get(key)?.let { view.setImageBitmap(it); done?.invoke(true); return }
         view.setImageDrawable(null)
         val ctx = view.context.applicationContext
         io.execute {
-            val bmp = runCatching { decode(ctx, url, width, alpha) }.getOrNull()
+            val bmp = runCatching { decode(ctx, url, width, alpha)?.let { transform?.invoke(it) ?: it } }.getOrNull()
             if (bmp != null) mem.put(key, bmp)
             Net.main.post {
                 if (view.tag != url) return@post

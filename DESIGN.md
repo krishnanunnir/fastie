@@ -103,7 +103,7 @@ components:
 
 **Creative North Star: "Spotlight"**
 
-The title you're on gets the whole screen. On TV the focused title's backdrop fills all of it, its logo, meta and synopsis sit top-left, and the rows sit in the darkened lower half. The focused poster widens from 2:3 into a 16:9 card that shows its own backdrop, so the cursor is the brightest and largest thing on screen. On phone the first title is a large floating card on a glow tinted from its art, and the hero scrolls away with the rows.
+The title you're on gets the whole screen. On TV the focused title's backdrop fills all of it, its logo, meta and synopsis sit top-left, and the rows sit in the darkened lower half. The focused poster stays a poster: it lifts slightly inside a 2dp white ring, and the full-screen backdrop behind changes to it once you pause. On phone the first title is a large floating card on a glow tinted from its art, and the hero scrolls away with the rows.
 
 The user chose this direction on 2026-11-03 from three home mockups (`mockups/home.html`, option C), replacing both the Netflix-style "Marquee" system and the Material You "Tonal" work in progress. Brand commitments from PRODUCT.md still hold: a dark living-room ground, horizontal poster rows, no Netflix red or marks.
 
@@ -144,7 +144,7 @@ System Roboto, in weight steps. Every style has a phone size and a TV size (`T` 
 **TV (960×540dp).**
 - **Tabs:** a 64dp bar at 48dp from the left edge, holding the wordmark, then a Search icon, Home, My List and Settings.
 - **Hero:** the backdrop is full-screen, under a bottom-up scrim (the lower 80%), a left-to-right scrim (70% of the width) and a top scrim (22%) behind the tabs. The hero text starts 92dp down and is 46% of the screen wide; the synopsis is capped at 2 lines.
-- **Rows:** start at 55% of the height. The focused row snaps to the top of the row list, and within a row the focused card slides to the row's start while it widens. Cards that have scrolled past the start are clipped, so the focused card always comes first.
+- **Rows:** start at 55% of the height. The focused row snaps to the top of the row list, and within a row the focused card glides to the row's start. Cards that have scrolled past the start are clipped, so the focused card always comes first.
 - **Other pages:** start below the tab bar.
 
 **Phone.**
@@ -156,7 +156,7 @@ System Roboto, in weight steps. Every style has a phone size and a TV size (`T` 
 ## Motion
 
 There are three motions:
-- Focusing a TV poster runs one 260ms animator (ease 0.2, 0.8, 0.2, 1) that widens the card to 16:9, fades in its backdrop face, and slides the row so the card leads.
+- Focusing a TV poster scales it to 1.04 over 150ms (a transform, never a relayout) and smooth-scrolls the row so it leads. The backdrop swaps 350ms after focus settles. On TV the backdrop is decoded at half the screen's width with its scrims painted in, so the GPU fills one full-screen layer: cheap TV boxes stutter otherwise.
 - The hero backdrop crossfades over 400ms once the user has rested on a title for 220ms.
 - Grid posters in My List scale to 1.06 on focus.
 
@@ -176,7 +176,7 @@ All pages use the same system. Corners come from `Shape` (6dp for buttons, rows,
   - Episode rows show a 16:9 thumbnail (8dp corners) with a 3dp amber progress line. Under focus they get a raised fill and a 2dp white ring, and the text stays white.
 - **Streams:** there is no stream page. Details lists the streams for Play's target under the buttons, best for the device first, five at a time with "Show all", in list rows that invert to white under focus. Episodes and Continue Watching play the best stream directly; the player finds it behind the poster.
 - **Settings:** section titles over list rows, in a column capped at 640dp.
-- **Search:** a 6dp field that gets a 2dp white stroke under focus, then the same poster rows as Home, including the widening focus.
+- **Search:** a pill field that gets a 2dp white stroke under focus; before typing, recent searches and what's popular on Home; results in one poster grid with All / Movies / Series filters, and pulsing poster placeholders while addons answer.
 - **My List:** a grid of posters that scale to 1.06 under focus.
 - **Sign-in:** the device code sits in a container box with a hairline outline, not a white box (white means focus). Inputs match the search field.
 - **Player:** the scrubber and played bar are amber, because they show progress.

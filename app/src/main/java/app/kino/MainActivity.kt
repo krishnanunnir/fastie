@@ -413,11 +413,14 @@ class HomePage(private val a: MainActivity) {
         if (first && tv) rows.post { rows.findViewHolderForAdapterPosition(0)?.itemView?.let { (it as ViewGroup).getChildAt(1).requestFocus() } }
     }
 
+    private var focusedRow = -1
+
     fun focused(item: Item, row: Int) {
-        layout.snapTo(row)
+        // Only a move to another row scrolls the page; left and right stay within the row.
+        if (row != focusedRow) { focusedRow = row; layout.snapTo(row) }
         pendingItem = item
         view.removeCallbacks(pending)
-        view.postDelayed(pending, 220) // only settle on titles the user pauses on
+        view.postDelayed(pending, 350) // only settle on titles the user pauses on, so holding a direction stays light
     }
 
     private fun showHero(item: Item) {
