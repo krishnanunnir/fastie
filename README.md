@@ -8,7 +8,7 @@ A very light way to watch what your Stremio-style addons provide, on Android TV 
 
 - **Netflix-style browsing.** As you move around, the title you're on fills the screen, with rows of posters below.
 - **Works with your addons.** Add any Stremio addon link, or sign in to your **Nuvio** account to bring your addons, My List and Continue Watching with you.
-- **Three steps to playing.** Pick a title, pick a stream, play. Resume where you stopped, on any device.
+- **Two steps to playing.** Pick a title and press Play: Kino picks the best stream for your screen, or choose another from the list under it. Resume where you stopped, on any device.
 - **TV first.** Everything works with a remote. Voice search works on remotes with a mic.
 
 Kino hosts no content and isn't affiliated with Nuvio or Stremio. A fresh install comes with Cinemeta (catalogs and details only); streams come from addons you add.
@@ -49,7 +49,7 @@ Plain Kotlin and Android Views; the platform's own HTTP, JSON and storage. The r
 | `Nuvio.kt` | Nuvio account: sign-in (email or TV code), pulling addons, My List and progress, pushing changes |
 | `Store.kt` | Progress, My List and settings on the device |
 | `MainActivity.kt`, `Pages.kt` | Home, Search, My List, Settings |
-| `DetailsActivity.kt`, `StreamsActivity.kt`, `PlayerActivity.kt` | Title → stream → playback |
+| `DetailsActivity.kt`, `Streams.kt`, `PlayerActivity.kt` | Title and its streams → playback |
 | `Ui.kt`, `Posters.kt`, `Images.kt` | Palette, type, focus, poster rows, image cache |
 
 `PRODUCT.md` and `DESIGN.md` hold the product and design decisions. The logo lives in `assets/branding/`; the app's icon, TV banner and wordmark are vector copies of it in `res/drawable`.

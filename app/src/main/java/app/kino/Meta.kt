@@ -86,6 +86,39 @@ class Stream(
         }
     }
 
+    private val about get() = "$name $title $filename"
+
+    /** "4K", "1080p", or null. */
+    val quality: String? get() = height.takeIf { it > 0 }?.let { if (it == 2160) "4K" else "${it}p" }
+
+    /** Where the video came from: "Remux", "Blu-ray", "WEB-DL", "WEBRip", "HDTV", "CAM" (filmed in a cinema), or null. */
+    val source: String? by lazy {
+        val t = about
+        listOf("""\b(HD)?CAM(-?Rip)?\b|\bHD-?TS\b|TELESYNC|\bTS\b""" to "CAM", "REMUX" to "Remux", "WEB-?DL" to "WEB-DL", "WEB-?Rip" to "WEBRip", "Blu-?Ray|BDRip|BRRip" to "Blu-ray", "HDTV" to "HDTV", "\\bWEB\\b" to "WEB")
+            .firstOrNull { (re, _) -> Regex(re, RegexOption.IGNORE_CASE).containsMatchIn(t) }?.second
+    }
+
+    /** "16.0 GB" or "880 MB". */
+    val size: String? get() = gigabytes?.let { if (it >= 1) "%.1f GB".format(it) else "%.0f MB".format(it * 1024) }
+
+    /** What's worth knowing at a glance: codec, HDR, then audio, as the addon describes them. */
+    val tags: List<String> by lazy {
+        val t = about
+        fun has(re: String) = Regex(re, RegexOption.IGNORE_CASE).containsMatchIn(t)
+        listOfNotNull(
+            when { has("""\bAV1\b""") -> "AV1"; has("""HEVC|[xh]\.?265""") -> "HEVC"; has("""AVC|[xh]\.?264""") -> "H.264"; else -> null },
+            when { has("""\bDV\b|DoVi|Dolby.?Vision""") -> "Dolby Vision"; has("""HDR10\+|HDR10P""") -> "HDR10+"; has("""\bHDR""") -> "HDR"; else -> null },
+            when { has("Atmos") -> "Atmos"; has("TrueHD") -> "TrueHD"; has("""DTS""") -> "DTS"; has("""DDP|DD\+|E-?AC-?3""") -> "DD+"; has("""\bAAC\b""") -> "AAC"; else -> null },
+            when { has("""7[ .]1""") -> "7.1"; has("""5[ .]1""") -> "5.1"; else -> null },
+        )
+    }
+
+    /** The file's name, from the addon's hints or its description, without the emoji addons decorate it with. */
+    val fileName: String? by lazy {
+        filename ?: title.lineSequence().firstOrNull { Regex("""\.(mkv|mp4|avi|m4v|ts)\b""", RegexOption.IGNORE_CASE).containsMatchIn(it) }
+            ?.replace(Regex("""^[^\p{L}\p{N}\[(]+"""), "")?.trim()
+    }
+
     companion object {
         /** Null for streams Kino can't play at all, such as YouTube ids or links out to other apps. */
         fun from(addon: String, o: JSONObject): Stream? {
@@ -104,7 +137,7 @@ class Stream(
 }
 
 /**
- * Best first for this screen and connection: one row per torrent, then streams at or under [maxHeight] whose bitrate
+ * Best first for this screen and connection: one row per torrent, CAM recordings last, then streams at or under [maxHeight] whose bitrate
  * fits [maxMbps] (the higher-quality of those first), then the rest, smallest first so they're likelier to keep up.
  * ponytail: bitrate is size over an assumed [minutes]; pass the real runtime if addons start sending it reliably.
  */
@@ -112,7 +145,8 @@ fun rankStreams(streams: List<Stream>, maxHeight: Int, maxMbps: Double, minutes:
     fun mbps(s: Stream) = s.gigabytes?.let { it * 8 * 1024 / (minutes * 60) }
     fun fits(s: Stream) = s.height in 1..maxHeight && (mbps(s)?.let { it <= maxMbps } ?: true)
     return streams.distinctBy { it.hash ?: it.url }.sortedWith(
-        compareByDescending<Stream> { fits(it) }
+        compareBy<Stream> { it.source == "CAM" } // a cinema recording only when there's nothing else
+            .thenByDescending { fits(it) }
             .thenByDescending { if (fits(it)) it.height else 0 }
             .thenBy { if (fits(it)) -(it.gigabytes ?: 0.0) else it.gigabytes ?: Double.MAX_VALUE }
     )

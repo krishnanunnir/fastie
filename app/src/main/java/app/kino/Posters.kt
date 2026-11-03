@@ -25,10 +25,11 @@ private fun Context.ringGap() = if (isTv) dp(4) else 0
 
 private val EASE = PathInterpolator(0.2f, 0.8f, 0.2f, 1f)
 
-/** Cards hand these back: what was focused (TV) or tapped. */
+/** Cards hand these back: what was focused (TV), tapped, or long-pressed in Continue Watching. */
 interface PosterHost {
     fun focused(item: Item, row: Int) {}
     fun open(item: Item, progress: Progress?)
+    fun more(item: Item, progress: Progress) {}
 }
 
 /** [wide] is the TV poster's 16:9 face (backdrop and name), shown while it has focus. */
@@ -138,6 +139,8 @@ class PosterAdapter(
             h.wide.alpha = if (on) 1f else 0f
         }
         h.card.setOnClickListener { host.open(item, p) }
+        // Long press (or holding OK on a remote): choose another stream, or start over.
+        if (p != null) h.card.setOnLongClickListener { host.more(item, p); true } else h.card.setOnLongClickListener(null)
         h.card.setOnFocusChangeListener { v, has ->
             if (h.wide != null) spotlight(h, item, has)
             else {

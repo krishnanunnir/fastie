@@ -289,3 +289,54 @@ fun Context.wordmark() = LinearLayout(this).apply {
     contentDescription = "Kino"
     addView(ImageView(context).apply { setImageResource(R.drawable.kino_logo) }, lp(dp(94), dp(28)))
 }
+
+/** A small rounded label: [solid] is white with ground ink (quality), otherwise a hairline outline (tags). */
+fun Context.pill(label: String, solid: Boolean = false) = text(T.META, if (solid) C.onPrimary else C.variant, s = label).apply {
+    typeface = Typeface.create("sans-serif-medium", if (solid) Typeface.BOLD else Typeface.NORMAL)
+    setTextSize(TypedValue.COMPLEX_UNIT_SP, if (isTv) 14f else if (solid) 13f else 12f)
+    setPadding(dp(8), dp(3), dp(8), dp(3))
+    background = if (solid) rounded(C.onSurface, dp(4).toFloat()) else rounded(Color.TRANSPARENT, dp(4).toFloat(), dp(1), C.outlineVariant)
+}
+
+/**
+ * One stream, everywhere streams are listed: the quality badge, source and size up top; codec, HDR and audio as pills;
+ * then where it comes from and the file's name. The best pick carries a hairline and says so. Focus draws a white ring.
+ */
+fun Context.streamCard(s: Stream, best: Boolean, onClick: () -> Unit): View = LinearLayout(this).apply {
+    orientation = LinearLayout.VERTICAL
+    isFocusable = true
+    isClickable = true
+    setPadding(dp(16), dp(14), dp(16), dp(14))
+    val r = dp(Shape.M).toFloat()
+    background = StateListDrawable().apply {
+        addState(FOCUSED, rounded(C.containerHigh, r, dp(2), C.onSurface))
+        addState(PRESSED, rounded(C.containerHigh, r))
+        addState(intArrayOf(), rounded(C.container, r, if (best) dp(1) else 0, C.alpha(C.onSurface, 0.3f)))
+    }
+    val top = LinearLayout(context).apply { gravity = Gravity.CENTER_VERTICAL }
+    s.quality?.let { top.addView(pill(it, solid = true), lp(-2, -2).apply { marginEnd = dp(10) }) }
+    top.addView(text(T.LABEL, lines = 1, s = when (s.source) {
+        null -> "Stream"
+        "CAM" -> "CAM  ·  filmed in a cinema"
+        else -> s.source
+    }), LinearLayout.LayoutParams(0, -2, 1f))
+    s.size?.let { top.addView(text(T.META, C.onSurface, s = it).apply { typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL) }, lp(-2, -2).apply { marginStart = dp(12) }) }
+    addView(top)
+    if (s.tags.isNotEmpty()) addView(com.google.android.material.chip.ChipGroup(context).apply {
+        chipSpacingHorizontal = dp(6); chipSpacingVertical = dp(6)
+        s.tags.forEach { addView(pill(it)) }
+    }, lp().apply { topMargin = dp(10) })
+    addView(text(T.META, C.variant, lines = 1).apply {
+        text = android.text.SpannableStringBuilder().apply {
+            if (best) {
+                append("Best for this ${if (isTv) "TV" else "phone"}", android.text.style.ForegroundColorSpan(C.onSurface), 0)
+                append("  ·  ")
+            }
+            append(listOfNotNull("TorBox".takeIf { s.hash != null }, s.addon).joinToString("  ·  "))
+        }
+    }, lp().apply { topMargin = dp(10) })
+    s.fileName?.let { addView(text(T.META, C.alpha(C.variant, 0.7f), lines = 1, s = it).apply {
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, if (isTv) 13f else 11.5f); ellipsize = TextUtils.TruncateAt.MIDDLE
+    }, lp().apply { topMargin = dp(4) }) }
+    setOnClickListener { onClick() }
+}

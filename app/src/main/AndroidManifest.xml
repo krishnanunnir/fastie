@@ -29,7 +29,6 @@
             </intent-filter>
         </activity>
         <activity android:name=".DetailsActivity" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />
-        <activity android:name=".StreamsActivity" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />
         <activity android:name=".SignInActivity" android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".PlayerActivity"

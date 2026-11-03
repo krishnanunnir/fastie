@@ -62,5 +62,21 @@ class LogicTest {
         // TV: 4K under 40 Mbps first; a 52 Mbps remux would stutter on most Wi-Fi.
         assertEquals("b", rankStreams(listOf(remux, hd, web4k), 2160, 40.0, 120).first().hash)
     }
+
+    @Test fun streamFacts() {
+        val c = Stream.from("Comet", JSONObject("""{"name":"Comet 2160p","infoHash":"a","description":"📄 Moana.2026.2160p.UHD.BluRay.REMUX.TrueHD.Atmos.7.1.DoVi.HDR10.HEVC.mkv\n💾 47.3 GB"}"""))!!
+        assertEquals("4K", c.quality); assertEquals("Remux", c.source); assertEquals("47.3 GB", c.size)
+        assertEquals(listOf("HEVC", "Dolby Vision", "Atmos", "7.1"), c.tags)
+        assertEquals("Moana.2026.2160p.UHD.BluRay.REMUX.TrueHD.Atmos.7.1.DoVi.HDR10.HEVC.mkv", c.fileName)
+        val t = Stream.from("Torz", JSONObject("""{"name":"[P2P] Torz 1080p","infoHash":"b","description":"💿 WEB-DLRip 🎞️ H264\n🎧 5.1\n📦 16 GB"}"""))!!
+        assertEquals("1080p", t.quality); assertEquals("WEB-DL", t.source); assertEquals(listOf("H.264", "5.1"), t.tags); assertEquals(null, t.fileName)
+    }
+
+    @Test fun camLast() {
+        val cam = Stream.from("T", JSONObject("""{"name":"Torz 1080p","infoHash":"c","behaviorHints":{"filename":"Film.2026.camrip.1080p.mkv"},"description":"x 💾 4.6 GB"}"""))!!
+        val hd = Stream.from("T", JSONObject("""{"name":"Torz 720p","infoHash":"d","description":"WEB-DL 💾 3 GB"}"""))!!
+        assertEquals("CAM", cam.source)
+        assertEquals(listOf("d", "c"), rankStreams(listOf(cam, hd), 1080, 20.0, 120).map { it.hash })
+    }
 }
 

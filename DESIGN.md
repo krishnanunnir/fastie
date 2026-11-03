@@ -174,7 +174,7 @@ All pages use the same system. Corners come from `Shape` (6dp for buttons, rows,
 - **Details:** the same hero as Home (a full-screen backdrop on TV, the logo sized to its own aspect, the ★ meta line, a 3-line synopsis), then Play and My List, then the season chips.
   - Season chips are pills: a hairline outline at rest, white 18% when selected, white when focused.
   - Episode rows show a 16:9 thumbnail (8dp corners) with a 3dp amber progress line. Under focus they get a raised fill and a 2dp white ring, and the text stays white.
-- **Streams:** a full-screen backdrop dimmed to 70% ground, with the title and episode line. Streams are grouped under addon section titles in list rows that invert to white under focus.
+- **Streams:** there is no stream page. Details lists the streams for Play's target under the buttons, best for the device first, five at a time with "Show all", in list rows that invert to white under focus. Episodes and Continue Watching play the best stream directly; the player finds it behind the poster.
 - **Settings:** section titles over list rows, in a column capped at 640dp.
 - **Search:** a 6dp field that gets a 2dp white stroke under focus, then the same poster rows as Home, including the widening focus.
 - **My List:** a grid of posters that scale to 1.06 under focus.

@@ -30,7 +30,7 @@ A Nuvio-compatible client that weighs a few megabytes. It reads the same Stremio
 
 ## Capabilities and Constraints
 
-- Core features: addon management, home catalog rows, search, details page (seasons and episodes), stream picker grouped by addon, in-app player (subtitles, audio tracks, resume), external player hand-off, continue watching, library, next episode, Nuvio account sign-in and sync, settings.
+- Core features: addon management, home catalog rows, search, details page (seasons and episodes), best-stream pick with the full list on the details page, in-app player (subtitles, audio tracks, resume), external player hand-off, continue watching, library, next episode, Nuvio account sign-in and sync, settings.
 - TV comes first: everything must be reachable by D-pad with a visible focus state; no screen may need touch.
 - Kino ships no stream sources. A fresh install has Cinemeta (catalogs and metadata) only; streams come from addons the user adds or syncs from their Nuvio account.
 - The Nuvio backend is third-party. Its API can change or refuse unofficial clients; Kino must keep working without an account.

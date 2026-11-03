@@ -28,6 +28,12 @@ class DetailsActivity : Activity() {
     private val meta by lazy { text(T.META, C.alpha(C.onSurface, 0.72f), lines = 2) }
     private val desc by lazy { text(T.BODY, C.alpha(C.onSurface, 0.82f), lines = if (isTv) 3 else 8) }
     private val seasons by lazy { LinearLayout(this) }
+    // Every stream for Play's target, best for this device first, found as soon as the page opens.
+    private val streamSlot by lazy { LinearLayout(this).apply { orientation = LinearLayout.VERTICAL } }
+    private var streams: List<Stream> = emptyList()
+    private var streamsFor: String? = null
+    private var showAll = false
+    private val links = HashMap<String?, String>()
     private lateinit var play: MaterialButton
     private lateinit var list: MaterialButton
     private val episodes = mutableListOf<Video>()
@@ -60,6 +66,7 @@ class DetailsActivity : Activity() {
         buttons.addView(play, if (isTv) lp(-2, -2).apply { marginEnd = dp(12) } else lp(0, -2).apply { weight = 1f; marginEnd = dp(10) })
         buttons.addView(list, if (isTv) lp(-2, -2) else lp(0, -2).apply { weight = 1f })
         header.addView(buttons, lp().apply { topMargin = dp(22) })
+        header.addView(streamSlot, lp(if (isTv) dp(640) else -1, -2))
         header.addView(HorizontalScrollView(this).apply {
             isHorizontalScrollBarEnabled = false
             addView(seasons)
@@ -153,6 +160,7 @@ class DetailsActivity : Activity() {
     }
 
     private fun updatePlay() {
+        findStreams()
         if (item.isSeries && item.videos.isNotEmpty()) {
             val target = resumeTarget()
             val v = target ?: item.videos.firstOrNull { it.season > 0 } ?: item.videos.first()
@@ -164,18 +172,61 @@ class DetailsActivity : Activity() {
         }
     }
 
+    /** What Play plays: the episode to resume or start for a series, the movie itself otherwise. Null until episodes load. */
+    private fun target(): Video? = when {
+        item.isSeries && item.videos.isNotEmpty() -> resumeTarget() ?: item.videos.firstOrNull { it.season > 0 } ?: item.videos.first()
+        item.isSeries -> null
+        else -> Video(item.id, "", -1, -1, null, null)
+    }
+
+    private fun type() = if (item.isSeries) "series" else item.type
+
+    /**
+     * Plays straight away: the link Play's target last played from (Resume), else the best stream listed below, else
+     * the player opens and finds the best stream itself while the list is still loading.
+     */
     private fun play() {
-        if (item.isSeries && item.videos.isNotEmpty()) {
-            openEpisode(resumeTarget() ?: item.videos.firstOrNull { it.season > 0 } ?: item.videos.first())
-        } else if (!item.isSeries) {
-            startActivity(Intent(this, StreamsActivity::class.java).putExtra("type", item.type).putExtra("id", item.id)
-                .putExtra("item", item.toJson().toString()))
+        val v = target() ?: return
+        val s = streams.firstOrNull()?.takeIf { streamsFor == v.id }
+        if (Store.lastLink(this, v.id) == null && s != null) playStream(item, s, links[s.hash], type(), v.id, v.season, v.episode)
+        else playBest(item, type(), v.id, v.season, v.episode)
+    }
+
+    /** Lists every playable stream for Play's target under the buttons, best first; tapping one plays it. */
+    private fun findStreams() {
+        val v = target() ?: return
+        if (streamsFor == v.id) return
+        streamsFor = v.id; streams = emptyList(); showAll = false
+        renderStreams("Finding streams…")
+        load({ findStreams(this, type(), v.id, v.season >= 0) }) { r ->
+            if (streamsFor != v.id) return@load
+            val found = r.getOrDefault(Found(emptyList(), 0, false))
+            streams = found.streams
+            renderStreams(found.emptyMessage())
+            // Get the best one's link ready too, so Play starts at once.
+            streams.firstOrNull()?.takeIf { it.hash != null }?.let { s ->
+                load({ TorBox.resolve(TorBox.key(this)!!, s.hash!!, s.filename, s.fileIdx) }) { l -> l.getOrNull()?.let { links[s.hash] = it } }
+            }
         }
     }
 
-    private fun openEpisode(v: Video) = startActivity(Intent(this, StreamsActivity::class.java)
-        .putExtra("type", "series").putExtra("id", v.id).putExtra("item", item.toJson().toString())
-        .putExtra("season", v.season).putExtra("episode", v.episode).putExtra("episodeTitle", v.title))
+    private fun renderStreams(empty: String) {
+        streamSlot.removeAllViews()
+        val v = target() ?: return
+        streamSlot.addView(sectionTitle(if (v.season >= 0) "Streams for S${v.season}:E${v.episode}" else "Streams"))
+        if (streams.isEmpty()) return streamSlot.addView(text(T.BODY, C.variant, s = empty))
+        val shown = if (showAll) streams else streams.take(5)
+        shown.forEachIndexed { i, s ->
+            streamSlot.addView(streamCard(s, best = i == 0) { playStream(item, s, links[s.hash], type(), v.id, v.season, v.episode) },
+                lp().apply { bottomMargin = dp(10) })
+        }
+        if (!showAll && streams.size > shown.size) streamSlot.addView(listRow("Show all ${streams.size} streams", null) {
+            showAll = true; renderStreams(empty); streamSlot.getChildAt(6)?.requestFocus()
+        })
+    }
+
+    /** An episode plays its best stream straight away; the player finds it behind the poster. */
+    private fun playEpisode(v: Video) = playBest(item, "series", v.id, v.season, v.episode)
 
     private fun toggleList() {
         val on = !Store.inLibrary(this, item.id)
@@ -237,7 +288,7 @@ class DetailsActivity : Activity() {
             bar.visibility = if (p != null && p.position > 0) View.VISIBLE else View.GONE
             if (p != null) bar.fraction = p.fraction.coerceAtLeast(0.04f)
             row.contentDescription = "Episode ${v.episode}, ${v.title}"
-            row.setOnClickListener { openEpisode(v) }
+            row.setOnClickListener { playEpisode(v) }
         }
     }
 }

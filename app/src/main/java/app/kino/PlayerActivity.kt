@@ -16,13 +16,18 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DataSpec
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.TransferListener
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
-import com.google.android.material.progressindicator.CircularProgressIndicator
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -50,13 +55,6 @@ class PlayerActivity : Activity() {
         season = intent.getIntExtra("season", -1).takeIf { it >= 0 }
         episode = intent.getIntExtra("episode", -1).takeIf { it >= 0 }
 
-        val subs = JSONArray(intent.getStringExtra("subs") ?: "[]").let { a -> List(a.length()) { a.getJSONObject(it) } }.map { s ->
-            val url = s.getString("url")
-            MediaItem.SubtitleConfiguration.Builder(Uri.parse(url))
-                .setMimeType(if (url.contains(".vtt", true)) MimeTypes.TEXT_VTT else MimeTypes.APPLICATION_SUBRIP)
-                .setLanguage(s.optString("lang").ifBlank { null })
-                .build()
-        }
         // The device's own decoders first; FFmpeg only for audio they can't handle. Dolby Vision that the device can't
         // decode (profile 7 remuxes, or any DV on phones without a DV decoder) plays its HEVC base layer, as HDR10.
         val decoders = MediaCodecSelector { mime, secure, tunneling ->
@@ -74,7 +72,15 @@ class PlayerActivity : Activity() {
         // Start after 1.5s of video instead of 2.5s; debrid links are fast enough that the rest fills while it plays.
         val buffer = DefaultLoadControl.Builder().setBufferDurationsMs(
             DefaultLoadControl.DEFAULT_MIN_BUFFER_MS, DefaultLoadControl.DEFAULT_MAX_BUFFER_MS, 1_500, 3_000).build()
+        // Counts what arrives, so the loading screen can show the download speed.
+        val http = DefaultHttpDataSource.Factory().setTransferListener(object : TransferListener {
+            override fun onTransferInitializing(source: DataSource, spec: DataSpec, network: Boolean) {}
+            override fun onTransferStart(source: DataSource, spec: DataSpec, network: Boolean) {}
+            override fun onBytesTransferred(source: DataSource, spec: DataSpec, network: Boolean, bytes: Int) { received.addAndGet(bytes.toLong()) }
+            override fun onTransferEnd(source: DataSource, spec: DataSpec, network: Boolean) {}
+        })
         player = ExoPlayer.Builder(this, renderers).setTrackSelector(tracks).setLoadControl(buffer)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(this, http)))
             .setSeekBackIncrementMs(10_000).setSeekForwardIncrementMs(10_000).build()
         view = PlayerView(this).apply {
             this.player = this@PlayerActivity.player
@@ -96,7 +102,49 @@ class PlayerActivity : Activity() {
             addView(cover(), FrameLayout.LayoutParams(-1, -1))
         })
 
-        player.setMediaItem(MediaItem.Builder().setUri(intent.getStringExtra("url")).setSubtitleConfigurations(subs).build())
+        // Whatever isn't ready yet happens here, behind the poster: a cached torrent gets its link from TorBox, and with
+        // nothing chosen (an episode or Continue Watching) the best stream is found first.
+        val url = intent.getStringExtra("url")
+        val hash = intent.getStringExtra("hash")
+        val subs = intent.getStringExtra("subs") ?: "[]"
+        val key = TorBox.key(this)
+        when {
+            url != null -> start(url, subs)
+            hash != null && key != null -> prepare("Getting the video from TorBox…", {
+                TorBox.resolve(key, hash, intent.getStringExtra("filename"), intent.getIntExtra("fileIdx", -1).takeIf { it >= 0 }) to subs
+            })
+            else -> prepare("Finding the best stream…", {
+                val found = findStreams(this, intent.getStringExtra("type")!!, videoId, season != null)
+                val best = found.streams.firstOrNull() ?: error(found.emptyMessage())
+                waiting = if (best.hash != null) "Getting the video from TorBox…" else "Connecting…"
+                (best.url ?: TorBox.resolve(key!!, best.hash!!, best.filename, best.fileIdx)) to subsJson(best)
+            })
+        }
+        view.post(progress)
+    }
+
+    // What the cover says while there's no link yet; null once the player has one.
+    @Volatile private var waiting: String? = null
+
+    /** Runs [work] off the main thread for a link and its subtitles, then plays it; on failure the cover says why. */
+    private fun prepare(status: String, work: () -> Pair<String, String>) {
+        waiting = status
+        load(work) { r ->
+            waiting = null
+            r.onSuccess { (link, subs) -> Store.saveLink(this, videoId, link, subs); start(link, subs) }
+                .onFailure { failCover(it.message ?: "Couldn't play this one. Go back and try again.") }
+        }
+    }
+
+    private fun start(url: String, subsJson: String) {
+        val subs = JSONArray(subsJson).let { a -> List(a.length()) { a.getJSONObject(it) } }.map { s ->
+            val u = s.getString("url")
+            MediaItem.SubtitleConfiguration.Builder(Uri.parse(u))
+                .setMimeType(if (u.contains(".vtt", true)) MimeTypes.TEXT_VTT else MimeTypes.APPLICATION_SUBRIP)
+                .setLanguage(s.optString("lang").ifBlank { null })
+                .build()
+        }
+        player.setMediaItem(MediaItem.Builder().setUri(url).setSubtitleConfigurations(subs).build())
         // Resume at the keyframe nearest your spot rather than the exact frame: the player can start drawing at once
         // instead of first downloading and decoding everything from the keyframe before it.
         player.setSeekParameters(androidx.media3.exoplayer.SeekParameters.CLOSEST_SYNC)
@@ -127,33 +175,76 @@ class PlayerActivity : Activity() {
         view.postDelayed(tick, 10_000)
     }
 
+    /** The cover stays, but says what went wrong; Back returns to the streams. */
+    private fun failCover(message: String) {
+        coverBar.visibility = View.GONE
+        coverStatus.text = message
+        coverStatus.setTextColor(C.onSurface)
+        coverView = null // stops the progress updates overwriting the message
+    }
+
     private var coverView: View? = null
+    private lateinit var coverBar: com.google.android.material.progressindicator.LinearProgressIndicator
+    private lateinit var coverStatus: android.widget.TextView
+    private val received = java.util.concurrent.atomic.AtomicLong()
 
     /**
-     * Until the first frame draws: the title's backdrop, dimmed, with its logo (or name) over a spinner,
+     * Until the first frame draws: the poster over its dimmed backdrop, with an amber line and what the player is doing,
      * so the wait reads as loading rather than a black screen.
      */
     private fun cover() = FrameLayout(this).apply {
         setBackgroundColor(C.ground)
-        val w = resources.displayMetrics.widthPixels
         addView(ImageView(context).apply {
-            scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0.35f
-            Images.load(this, item.backgroundOrHub, w)
+            scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0.25f
+            Images.load(this, item.backgroundOrHub, resources.displayMetrics.widthPixels)
         }, FrameLayout.LayoutParams(-1, -1))
+        val pw = dp(if (isTv) 200 else 168)
         val col = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL }
-        val title = text(T.TITLE, s = item.name)
-        val logo = ImageView(context).apply { adjustViewBounds = true; maxHeight = dp(80); maxWidth = dp(280); visibility = View.GONE }
-        val logoUrl = item.logo ?: if (item.id.startsWith("tt")) "https://images.metahub.space/logo/medium/${item.id}/img" else null
-        Images.load(logo, logoUrl, dp(280), alpha = true) { ok -> logo.visibility = if (ok) View.VISIBLE else View.GONE; title.visibility = if (ok) View.GONE else View.VISIBLE }
-        col.addView(logo, lp(-2, -2))
-        col.addView(title, lp(-2, -2))
-        if (season != null) col.addView(text(T.META, C.variant, s = "Season $season, Episode $episode").apply { setPadding(0, dp(8), 0, 0) }, lp(-2, -2))
-        col.addView(CircularProgressIndicator(context).apply {
-            isIndeterminate = true; setIndicatorColor(C.onSurface); trackColor = C.alpha(C.onSurface, 0.15f)
-            indicatorSize = dp(36); trackThickness = dp(3)
-        }, lp(-2, -2).apply { topMargin = dp(28) })
+        col.addView(ImageView(context).apply {
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            background = rounded(C.container, dp(Shape.M).toFloat())
+            outlineProvider = MorphOutline(dp(Shape.M).toFloat()); clipToOutline = true
+            elevation = dp(16).toFloat()
+            Images.load(this, item.posterOrHub, pw)
+        }, lp(pw, pw * 3 / 2))
+        col.addView(text(T.ROW, lines = 2, s = item.name).apply { gravity = Gravity.CENTER }, lp(pw + dp(80), -2).apply { topMargin = dp(20) })
+        if (season != null) col.addView(text(T.META, C.variant, s = "Season $season, Episode $episode").apply { setPadding(0, dp(4), 0, 0) }, lp(-2, -2))
+        coverBar = progressLine().apply { isIndeterminate = true }
+        col.addView(coverBar, lp(pw, -2).apply { topMargin = dp(20) })
+        coverStatus = text(T.META, C.variant, s = "Connecting…")
+        col.addView(coverStatus, lp(-2, -2).apply { topMargin = dp(10) })
         addView(col, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
         coverView = this
+    }
+
+    /**
+     * Four times a second while the cover shows: the download speed, and once video is buffered past where playback
+     * starts, how much of the 1.5s it needs. Before that (reading the file's index, reaching the right spot) the line
+     * stays indeterminate, since there's nothing honest to measure.
+     */
+    private val progress = object : Runnable {
+        private var lastBytes = 0L
+        private var lastAt = android.os.SystemClock.elapsedRealtime()
+        private var speed = 0.0
+
+        override fun run() {
+            if (coverView == null) return
+            val now = android.os.SystemClock.elapsedRealtime()
+            val bytes = received.get()
+            if (now > lastAt) speed = speed * 0.6 + (bytes - lastBytes) * 1000.0 / (now - lastAt) * 0.4
+            lastBytes = bytes; lastAt = now
+            val ahead = (player.bufferedPosition - player.currentPosition).coerceAtLeast(0)
+            val fraction = if (player.playbackState == Player.STATE_BUFFERING && ahead > 0) (ahead / 1500f).coerceAtMost(1f) else 0f
+            if (fraction > 0) coverBar.setProgressCompat((fraction * 1000).toInt(), true)
+            val rate = if (speed >= 1e6) "%.1f MB/s".format(speed / 1e6) else "%.0f KB/s".format(speed / 1e3)
+            coverStatus.text = when {
+                waiting != null -> waiting!!
+                bytes == 0L -> "Connecting…"
+                fraction > 0 -> "Buffering ${(fraction * 100).toInt()}%  ·  $rate"
+                else -> "Loading  ·  $rate"
+            }
+            view.postDelayed(this, 250)
+        }
     }
 
     private fun hideCover() {
@@ -187,6 +278,7 @@ class PlayerActivity : Activity() {
 
     override fun onDestroy() {
         view.removeCallbacks(tick)
+        view.removeCallbacks(progress)
         player.release()
         super.onDestroy()
     }

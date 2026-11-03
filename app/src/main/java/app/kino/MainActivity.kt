@@ -12,6 +12,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.recyclerview.widget.RecyclerView
 
 /** Home, Search, My List and Settings, under tabs (TV) or over a bottom bar (phone). */
@@ -168,6 +169,23 @@ class MainActivity : Activity(), PosterHost {
 
     override fun open(item: Item, progress: Progress?) = openItem(this, item, progress)
 
+    /** Continue Watching's long press: pick the stream yourself, or play from the start. */
+    override fun more(item: Item, progress: Progress) {
+        val season = progress.season ?: -1
+        val episode = progress.episode ?: -1
+        val what = if (progress.season != null) "${item.name}  ·  S${progress.season}:E${progress.episode}" else item.name
+        MaterialAlertDialogBuilder(this).setTitle(what).setItems(arrayOf("Choose another stream", "Start from the beginning")) { _, i ->
+            when (i) {
+                0 -> chooseStream(item, progress.type, progress.videoId, season, episode)
+                1 -> {
+                    Store.saveProgress(this, Progress(progress.contentId, progress.type, progress.videoId, progress.season, progress.episode,
+                        0, progress.duration, System.currentTimeMillis(), progress.name))
+                    playBest(item, progress.type, progress.videoId, season, episode)
+                }
+            }
+        }.show()
+    }
+
     /** Called by Settings after the addon list or the account changes. */
     fun reloadHome() = home.reload()
 
@@ -177,14 +195,10 @@ class MainActivity : Activity(), PosterHost {
 }
 
 /** A title opens its details; a continue-watching card goes straight to its streams. */
+/** Continue Watching plays on from where you were; anything else opens its page. */
 fun openItem(a: Activity, item: Item, progress: Progress?) {
-    if (progress != null) {
-        a.startActivity(Intent(a, StreamsActivity::class.java)
-            .putExtra("type", progress.type).putExtra("id", progress.videoId).putExtra("item", item.toJson().toString())
-            .putExtra("season", progress.season ?: -1).putExtra("episode", progress.episode ?: -1))
-    } else {
-        a.startActivity(Intent(a, DetailsActivity::class.java).putExtra("item", item.toJson().toString()))
-    }
+    if (progress != null) a.playBest(item, progress.type, progress.videoId, progress.season ?: -1, progress.episode ?: -1)
+    else a.startActivity(Intent(a, DetailsActivity::class.java).putExtra("item", item.toJson().toString()))
 }
 
 @Suppress("DEPRECATION")
