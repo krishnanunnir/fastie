@@ -13,7 +13,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.google.android.material.progressindicator.LinearProgressIndicator
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.recyclerview.widget.LinearSmoothScroller
 import androidx.recyclerview.widget.RecyclerView
 
@@ -46,7 +48,7 @@ class PosterHolder(
 class PosterAdapter(
     private val items: List<Item>,
     private val host: PosterHost,
-    private val row: Int = 0,
+    private val row: () -> Int = { 0 }, // read when focused, so rows that moved still report where they are
     private val progress: Map<String, Progress> = emptyMap(),
     private val fill: Boolean = false,
 ) : RecyclerView.Adapter<PosterHolder>() {
@@ -147,7 +149,7 @@ class PosterAdapter(
                 if (fill) v.animate().scaleX(if (has) 1.06f else 1f).scaleY(if (has) 1.06f else 1f).translationZ(if (has) 8f else 0f).setDuration(150).start()
                 else if (has) spotlight(h, item, true)
             }
-            if (has) host.focused(item, row)
+            if (has) host.focused(item, row())
         }
     }
 
@@ -194,7 +196,11 @@ fun resumeLabel(p: Progress): String {
     return if (p.season != null && p.episode != null) "S${p.season} · E${p.episode} · $time" else time
 }
 
-class Row(val title: String, val items: List<Item>, val progress: Map<String, Progress> = emptyMap())
+class Row(val title: String, val items: List<Item>, val progress: Map<String, Progress> = emptyMap()) {
+    /** Same titles, in the same order, at the same progress: nothing to redraw. */
+    fun sameAs(o: Row) = title == o.title && items.map { it.id } == o.items.map { it.id } &&
+        progress.mapValues { it.value.position } == o.progress.mapValues { it.value.position }
+}
 
 /** The vertical list of titled poster rows. [header] (the phone's hero) scrolls with them as item 0. */
 class RowsAdapter(private val host: PosterHost, private val header: View? = null) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -202,10 +208,27 @@ class RowsAdapter(private val host: PosterHost, private val header: View? = null
     private val pool = RecyclerView.RecycledViewPool().apply { setMaxRecycledViews(0, 40) }
     private val offset get() = if (header != null) 1 else 0
 
+    /**
+     * Updates only the rows that changed. Home calls this each time a catalog lands, and redrawing every row then
+     * made Continue Watching's progress lines flicker.
+     */
     fun set(newRows: List<Row>) {
+        val old = rows.toList()
+        val next = newRows.filter { it.items.isNotEmpty() }
+        val diff = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize() = old.size
+            override fun getNewListSize() = next.size
+            override fun areItemsTheSame(o: Int, n: Int) = old[o].title == next[n].title
+            override fun areContentsTheSame(o: Int, n: Int) = old[o].sameAs(next[n])
+        })
         rows.clear()
-        rows += newRows.filter { it.items.isNotEmpty() }
-        notifyDataSetChanged()
+        rows += next
+        diff.dispatchUpdatesTo(object : ListUpdateCallback {
+            override fun onInserted(at: Int, count: Int) = notifyItemRangeInserted(at + offset, count)
+            override fun onRemoved(at: Int, count: Int) = notifyItemRangeRemoved(at + offset, count)
+            override fun onMoved(from: Int, to: Int) = notifyItemMoved(from + offset, to + offset)
+            override fun onChanged(at: Int, count: Int, payload: Any?) = notifyItemRangeChanged(at + offset, count)
+        })
     }
 
     override fun getItemCount() = rows.size + offset
@@ -240,7 +263,7 @@ class RowsAdapter(private val host: PosterHost, private val header: View? = null
         val row = rows[pos - offset]
         val box = h.itemView as LinearLayout
         (box.getChildAt(0) as TextView).text = row.title
-        (box.getChildAt(1) as RecyclerView).adapter = PosterAdapter(row.items, host, pos, row.progress)
+        (box.getChildAt(1) as RecyclerView).adapter = PosterAdapter(row.items, host, { h.bindingAdapterPosition }, row.progress)
     }
 }
 

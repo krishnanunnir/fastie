@@ -78,5 +78,22 @@ class LogicTest {
         assertEquals("CAM", cam.source)
         assertEquals(listOf("d", "c"), rankStreams(listOf(cam, hd), 1080, 20.0, 120).map { it.hash })
     }
+
+    @Test fun homeRows() {
+        val x = Addon("https://x/manifest.json", JSONObject("""{"name":"Xperience"}"""))
+        val k = Addon("https://k/manifest.json", JSONObject("""{"name":"Anime Kitsu"}"""))
+        val cats = listOf(Catalog(x, "movie", "genre_action_movies", "Action"), Catalog(k, "anime", "kitsu-anime-trending", "Kitsu Trending"),
+            Catalog(x, "movie", "trending_movies", "Trending"), Catalog(x, "series", "trending_series", "Trending"),
+            Catalog(x, "movie", "recs_movies_for_you", "For You"), Catalog(x, "movie", "snoak_top100_movies", "Top 100 Today"),
+            Catalog(x, "series", "streaming_netflix_series", "Netflix"))
+        val ordered = cats.sortedBy(::homeRank)
+        assertEquals(listOf("Movies for You", "Trending Movies", "Trending Series", "Top 100 Today", "Netflix", "Action", "Trending Anime"),
+            ordered.map { homeTitle(it, cats) })
+
+        fun items(vararg ids: String) = ids.map { Item(it, "movie", it) }
+        val rows = listOf(Row("A", items("1", "2", "3", "4", "5")), Row("Small", items("6", "7")),
+            Row("Same", items("1", "2", "3", "9", "10")), Row("B", items("11", "12", "13", "14", "15")))
+        assertEquals(listOf("A", "B"), curateRows(rows).map { it.title })
+    }
 }
 

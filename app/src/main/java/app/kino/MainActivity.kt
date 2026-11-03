@@ -37,7 +37,9 @@ class MainActivity : Activity(), PosterHost {
         pages = FrameLayout(this)
         root.addView(pages, FrameLayout.LayoutParams(-1, -1))
         val bar = if (isTv) tabs() else bottomBar()
-        navBar = bar
+        navBar = if (isTv) bar else dock
+        // The dock brings its own fade, so the phone's system bar goes clear over it.
+        if (!isTv) window.navigationBarColor = Color.TRANSPARENT
         root.addView(bar)
         root.setOnApplyWindowInsetsListener { _, insets ->
             @Suppress("DEPRECATION")
@@ -45,8 +47,10 @@ class MainActivity : Activity(), PosterHost {
             @Suppress("DEPRECATION")
             val bottom = insets.systemWindowInsetBottom
             if (!isTv) {
-                bar.setPadding(0, dp(6), 0, bottom + dp(10))
-                pages.setPadding(0, 0, 0, bottom + dp(80))
+                (dock.layoutParams as FrameLayout.LayoutParams).bottomMargin = bottom + dp(12)
+                dockFade.layoutParams.height = bottom + dp(140)
+                bar.requestLayout()
+                pages.setPadding(0, 0, 0, bottom + dp(92))
             }
             settings?.view?.setPadding(0, topInset, 0, 0)
             if (::home.isInitialized) home.inset(topInset)
@@ -86,31 +90,57 @@ class MainActivity : Activity(), PosterHost {
         for (i in intArrayOf(1, 0, 2, 3)) addView(navItem(i), lp(-2, -2).apply { marginEnd = dp(4) })
     }
 
-    private fun bottomBar() = LinearLayout(this).apply {
+    private lateinit var dock: LinearLayout
+    private lateinit var dockFade: View
+
+    /**
+     * Phone: a capsule floating over a fade, so rows scroll quietly beneath it. The current page is a white pill with
+     * its label; the others are just icons. The pill slides between them (see [show]).
+     */
+    private fun bottomBar() = FrameLayout(this).apply {
         layoutParams = FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM)
-        setBackgroundColor(C.alpha(C.ground, 0.96f))
-        for (i in 0..3) addView(navItem(i), LinearLayout.LayoutParams(0, -2, 1f))
+        // Heights are set with the window insets (see onCreate): a fade with no height of its own would fill the screen.
+        dockFade = View(context).apply {
+            background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.BOTTOM_TOP,
+                intArrayOf(C.alpha(C.ground, 0.95f), C.alpha(C.ground, 0.7f), C.alpha(C.ground, 0f)))
+        }
+        addView(dockFade, FrameLayout.LayoutParams(-1, dp(140), Gravity.BOTTOM))
+        dock = LinearLayout(context).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(8), 0, dp(8), 0)
+            background = rounded(C.containerHigh, dp(32).toFloat(), dp(1), C.alpha(C.onSurface, 0.08f))
+            elevation = dp(12).toFloat()
+            for (i in 0..3) addView(dockItem(i))
+        }
+        addView(dock, FrameLayout.LayoutParams(-1, dp(64), Gravity.BOTTOM).apply { setMargins(dp(16), 0, dp(16), dp(12)) })
     }
 
-    /** Phone: icon over label. TV: a text tab (Search is its icon) with an amber underline on the current page. */
+    private fun dockItem(i: Int) = LinearLayout(this).apply {
+        gravity = Gravity.CENTER
+        isClickable = true
+        contentDescription = labels[i]
+        addView(ImageView(context).apply { setImageResource(icons[i]) }, lp(dp(22), dp(22)))
+        addView(text(T.LABEL, s = labels[i]).apply { setPadding(dp(8), 0, 0, 0) }, lp(-2, -2))
+        setOnClickListener { show(i) }
+        nav += this
+        tag = i
+    }
+
+    /** TV: a text tab (Search is its icon) with an amber underline on the current page. */
     private fun navItem(i: Int) = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         gravity = Gravity.CENTER_HORIZONTAL
         isClickable = true
-        isFocusable = isTv
+        isFocusable = true
         contentDescription = labels[i]
-        val iconOnly = isTv && i == 1
-        if (!isTv || iconOnly) addView(ImageView(context).apply { setImageResource(icons[i]) }, lp(dp(if (isTv) 22 else 24), dp(if (isTv) 22 else 24)))
-        if (!iconOnly) addView(text(T.META, s = labels[i]).apply {
+        if (i == 1) addView(ImageView(context).apply { setImageResource(icons[i]) }, lp(dp(22), dp(22)))
+        else addView(text(T.META, s = labels[i]).apply {
             typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
-            setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, if (isTv) 16f else 12f)
-            if (!isTv) setPadding(0, dp(4), 0, 0)
+            setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16f)
         }, lp(-2, -2))
-        if (isTv) {
-            setPadding(dp(16), dp(9), dp(16), dp(5))
-            background = rounded(Color.TRANSPARENT, dp(20).toFloat())
-            addView(View(context).apply { background = rounded(C.amber, dp(1).toFloat()) }, lp(-1, dp(2)).apply { topMargin = dp(4) })
-        } else setPadding(0, dp(6), 0, dp(6))
+        setPadding(dp(16), dp(9), dp(16), dp(5))
+        background = rounded(Color.TRANSPARENT, dp(20).toFloat())
+        addView(View(context).apply { background = rounded(C.amber, dp(1).toFloat()) }, lp(-1, dp(2)).apply { topMargin = dp(4) })
         setOnFocusChangeListener { v, _ -> tint(v, i) }
         setOnClickListener { show(i) }
         nav += this
@@ -120,6 +150,15 @@ class MainActivity : Activity(), PosterHost {
     private fun tint(v: View, i: Int) {
         val item = v as LinearLayout
         val active = i == page
+        if (!isTv) {
+            // The current page takes its own width as a white pill; the rest share what's left as icons.
+            item.layoutParams = if (active) LinearLayout.LayoutParams(-2, dp(48)) else LinearLayout.LayoutParams(0, dp(48), 1f)
+            item.setPadding(if (active) dp(18) else 0, 0, if (active) dp(20) else 0, 0)
+            item.background = if (active) rounded(C.onSurface, dp(24).toFloat()) else null
+            (item.getChildAt(0) as ImageView).setColorFilter(if (active) C.onPrimary else C.variant)
+            (item.getChildAt(1) as TextView).apply { setTextColor(C.onPrimary); visibility = if (active) View.VISIBLE else View.GONE }
+            return
+        }
         val ink = when {
             v.isFocused -> C.onPrimary
             active -> if (isTv) C.onSurface else C.amber
@@ -144,6 +183,7 @@ class MainActivity : Activity(), PosterHost {
         }.also { views[i] = it; pages.addView(it, FrameLayout.LayoutParams(-1, -1).apply { topMargin = if (isTv && i != 0) dp(TABS) else 0 }) }
         views.forEach { it?.visibility = if (it === v) View.VISIBLE else View.GONE }
         val inTabs = nav.any { it.isFocused }
+        if (!isTv) android.transition.TransitionManager.beginDelayedTransition(dock, android.transition.AutoTransition().setDuration(220))
         nav.forEach { tint(it, it.tag as Int); if (isTv && !inTabs) it.isFocusable = it.tag == i }
         when (i) {
             1 -> search?.focus()
@@ -328,13 +368,16 @@ class HomePage(private val a: MainActivity) {
         statusScrim?.let { it.layoutParams.height = top + a.dp(16); it.requestLayout() }
     }
 
-    /** Loads every addon catalog in parallel; each row lands as soon as its own addon answers. */
+    /**
+     * Loads every addon catalog in parallel, in Home's order (see [homeRank]). Rows appear top-down: each one shows once
+     * every row above it has answered, so nothing is ever inserted above what you're looking at.
+     */
     fun reload() {
         status.text = "Loading your catalogs…"
         status.visibility = View.VISIBLE
         a.load({
             Addons.ensureDefaults(a)
-            Addons.list(a).flatMap { it.catalogs }
+            Addons.list(a).flatMap { it.catalogs }.sortedBy(::homeRank) // stable: ties keep the addon's own order
         }) { r ->
             val catalogs = r.getOrElse {
                 status.text = "Couldn't reach your addons. Check the connection and open Home again."
@@ -343,20 +386,13 @@ class HomePage(private val a: MainActivity) {
             val slots = arrayOfNulls<Row>(catalogs.size)
             catalogs.forEachIndexed { i, c ->
                 a.load({ Addons.catalog(c) }) { res ->
-                    slots[i] = Row(rowTitle(c, catalogs), res.getOrDefault(emptyList()))
-                    catalogRows = slots.filterNotNull()
+                    slots[i] = Row(homeTitle(c, catalogs), res.getOrDefault(emptyList()))
+                    catalogRows = curateRows(slots.takeWhile { it != null }.filterNotNull())
                     publish()
                 }
             }
             if (catalogs.isEmpty()) status.text = "No catalogs yet. Add an addon in Settings."
         }
-    }
-
-    private fun rowTitle(c: Catalog, all: List<Catalog>): String {
-        val type = when (c.type) { "movie" -> "Movies"; "series" -> "Series"; else -> c.type.replaceFirstChar(Char::uppercase) }
-        // Cinemeta names both its lists "Popular"; say which.
-        val name = if (all.count { it.name == c.name && it.addon == c.addon } > 1) "${c.name} $type" else c.name
-        return if (all.map { it.addon }.distinct().size > 1 && c.addon.url != Addons.CINEMETA) "$name · ${c.addon.name}" else name
     }
 
     private fun continueRow(): Row? {
@@ -367,14 +403,16 @@ class HomePage(private val a: MainActivity) {
         return Row("Continue Watching", items, cw.associateBy { it.contentId })
     }
 
+    private fun myListRow(): Row? = Store.library(a).takeIf { it.isNotEmpty() }?.let { Row("My List", it) }
+
     fun refreshContinue() { if (catalogRows.isNotEmpty()) publish() }
 
     private fun publish() {
         val first = adapter.rows.isEmpty()
-        adapter.set(listOfNotNull(continueRow()) + catalogRows)
+        adapter.set(listOfNotNull(continueRow(), myListRow()) + catalogRows)
         if (adapter.rows.isEmpty()) return
         status.visibility = View.GONE
-        if (heroItem == null) showHero(adapter.rows.first { it.title != "Continue Watching" || catalogRows.isEmpty() }.items.first())
+        if (heroItem == null) showHero((catalogRows.firstOrNull() ?: adapter.rows.first()).items.first())
         if (first && tv) rows.post { rows.findViewHolderForAdapterPosition(0)?.itemView?.let { (it as ViewGroup).getChildAt(1).requestFocus() } }
     }
 
@@ -431,5 +469,54 @@ class HomePage(private val a: MainActivity) {
 fun setListLabel(b: MaterialButton, on: Boolean) {
     b.text = if (on) "In My List" else "My List"
     b.setIconResource(if (on) R.drawable.ic_check else R.drawable.ic_add)
+}
+
+/**
+ * Where a catalog sits on Home: personal picks, then what's trending and on top today, then what's new, streaming
+ * services, genres, and anime last. Addons don't say what a catalog is, so this reads its id and name.
+ */
+fun homeRank(c: Catalog): Int {
+    val t = "${c.id} ${c.name}".lowercase()
+    return when {
+        c.type == "anime" -> 7
+        Regex("for.?you|recommend|recs_").containsMatchIn(t) -> 0
+        "trending" in t -> 1
+        Regex("top.?\\d+|today").containsMatchIn(t) -> 2
+        Regex("popular|featured").containsMatchIn(t) -> 3
+        Regex("theat|on.?the.?air|airing|now.?playing|new|latest").containsMatchIn(t) -> 4
+        Regex("netflix|prime|disney|hbo|hulu|apple|paramount|peacock|streaming").containsMatchIn(t) -> 5
+        Regex("genre|action|comedy|drama|horror|thriller").containsMatchIn(t) -> 6
+        else -> 5
+    }
+}
+
+/**
+ * A row's title without addon names: "Trending Movies", "Movies for You", "Trending Anime". A word of the addon's name
+ * that prefixes the catalog ("Kitsu Trending") is dropped; the type is added when a name alone would repeat.
+ */
+fun homeTitle(c: Catalog, all: List<Catalog>): String {
+    val kind = when (c.type) { "movie" -> "Movies"; "series" -> "Series"; "anime" -> "Anime"; else -> c.type.replaceFirstChar(Char::uppercase) }
+    val name = c.addon.name.split(' ').fold(c.name) { n, word -> n.removePrefix("$word ") }.trim().ifBlank { kind }
+    return when {
+        name.equals("for you", true) -> "$kind for You"
+        c.type == "anime" && !name.contains("anime", true) -> "$name Anime"
+        all.count { it.name == c.name } > 1 && !name.contains(kind, true) -> "$name $kind"
+        else -> name
+    }
+}
+
+/**
+ * Drops rows not worth a line on Home: fewer than 5 titles, or mostly the same titles as a row above (Trending and
+ * Top 100 Today often are). ponytail: the overlap check is quadratic in rows, fine for the few dozen an addon gives.
+ */
+fun curateRows(rows: List<Row>): List<Row> {
+    val kept = mutableListOf<Row>()
+    for (r in rows) {
+        if (r.items.size < 5) continue
+        val ids = r.items.map { it.id }.toSet()
+        if (kept.any { k -> k.items.count { it.id in ids } >= ids.size * 0.6 }) continue
+        kept += r
+    }
+    return kept
 }
 
