@@ -65,7 +65,6 @@ class PlayerActivity : Activity() {
             .setMediaCodecSelector(decoders).setEnableDecoderFallback(true)
         // Audio in the phone's languages, then English, rather than whichever track the file flags as default.
         // Forced subtitles follow the audio language, so this also stops foreign forced subtitles showing.
-        val languages = resources.configuration.locales.let { l -> List(l.size()) { l[it].language } } + "en"
         val tracks = DefaultTrackSelector(this).apply {
             setParameters(buildUponParameters().setPreferredAudioLanguages(*languages.distinct().toTypedArray()))
         }
@@ -109,13 +108,15 @@ class PlayerActivity : Activity() {
         val hash = intent.getStringExtra("hash")
         val subs = intent.getStringExtra("subs") ?: "[]"
         val key = TorBox.key(this)
+        val type = intent.getStringExtra("type")!!
+        subtitlesAhead = Net.fan.submit(java.util.concurrent.Callable { Addons.subtitles(this, type, videoId) })
         when {
             url != null -> start(url, subs)
             hash != null && key != null -> prepare("Getting the video from TorBox…", {
                 TorBox.resolve(key, hash, intent.getStringExtra("filename"), intent.getIntExtra("fileIdx", -1).takeIf { it >= 0 }) to subs
             })
             else -> prepare("Finding the best stream…", {
-                val found = findStreams(this, intent.getStringExtra("type")!!, videoId, season != null)
+                val found = findStreams(this, type, videoId, season != null)
                 val best = found.streams.firstOrNull() ?: error(found.emptyMessage())
                 waiting = if (best.hash != null) "Getting the video from TorBox…" else "Connecting…"
                 (best.url ?: TorBox.resolve(key!!, best.hash!!, best.filename, best.fileIdx)) to subsJson(best)
@@ -123,6 +124,13 @@ class PlayerActivity : Activity() {
         }
         view.post(progress)
     }
+
+    // Your languages, the phone's then English: audio prefers them, and subtitles come in them.
+    private val languages by lazy { (resources.configuration.locales.let { l -> List(l.size()) { l[it].language } } + "en").distinct() }
+
+    // Subtitles from every subtitle addon, asked for as the player opens so they're usually in by the time the link is.
+    private var subtitlesAhead: java.util.concurrent.Future<List<Subtitle>>? = null
+    private val openedAt = android.os.SystemClock.elapsedRealtime()
 
     // What the cover says while there's no link yet; null once the player has one.
     @Volatile private var waiting: String? = null
@@ -137,15 +145,48 @@ class PlayerActivity : Activity() {
         }
     }
 
+    /**
+     * Gives the subtitle addons until about 2s after the player opened (they've usually answered while the link was
+     * being found), then plays: subtitles can't be added once a video has started without restarting it.
+     */
     private fun start(url: String, subsJson: String) {
-        val subs = JSONArray(subsJson).let { a -> List(a.length()) { a.getJSONObject(it) } }.map { s ->
-            val u = s.getString("url")
-            MediaItem.SubtitleConfiguration.Builder(Uri.parse(u))
-                .setMimeType(if (u.contains(".vtt", true)) MimeTypes.TEXT_VTT else MimeTypes.APPLICATION_SUBRIP)
-                .setLanguage(s.optString("lang").ifBlank { null })
+        val fromStream = JSONArray(subsJson).let { a -> List(a.length()) { a.getJSONObject(it) } }
+            .map { Subtitle(it.optString("lang"), it.getString("url"), "stream") }
+        val ahead = subtitlesAhead
+        if (ahead == null || ahead.isDone) return begin(url, fromStream + (runCatching { ahead?.get() }.getOrNull() ?: emptyList()))
+        waiting = "Getting subtitles…"
+        load({
+            val left = (2_000 - (android.os.SystemClock.elapsedRealtime() - openedAt)).coerceAtLeast(300)
+            runCatching { ahead.get(left, java.util.concurrent.TimeUnit.MILLISECONDS) }.getOrNull() ?: emptyList()
+        }) { r -> waiting = null; begin(url, fromStream + r.getOrDefault(emptyList())) }
+    }
+
+    private fun begin(url: String, offered: List<Subtitle>) {
+        val subs = pickSubtitles(offered, languages).map { s ->
+            val code = langCode(s.lang)
+            val name = code?.let { java.util.Locale(it).getDisplayLanguage(java.util.Locale.getDefault()).replaceFirstChar(Char::uppercase) } ?: s.lang.ifBlank { "Subtitles" }
+            MediaItem.SubtitleConfiguration.Builder(Uri.parse(s.url))
+                .setMimeType(when {
+                    s.url.contains(".vtt", true) -> MimeTypes.TEXT_VTT
+                    s.url.contains(".ass", true) || s.url.contains(".ssa", true) -> MimeTypes.TEXT_SSA
+                    else -> MimeTypes.APPLICATION_SUBRIP
+                })
+                .setLanguage(code ?: s.lang.ifBlank { null })
+                .setLabel(if (s.source == "stream") name else "$name · ${s.source}")
                 .build()
         }
         player.setMediaItem(MediaItem.Builder().setUri(url).setSubtitleConfigurations(subs).build())
+        // Subtitles switch on by themselves only when the audio isn't in one of your languages (a foreign film);
+        // otherwise they wait in the CC menu.
+        player.addListener(object : Player.Listener {
+            override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+                val audio = tracks.groups.firstOrNull { it.type == androidx.media3.common.C.TRACK_TYPE_AUDIO && it.isSelected } ?: return
+                player.removeListener(this)
+                val spoken = langCode((0 until audio.length).firstOrNull { audio.isTrackSelected(it) }?.let { audio.getTrackFormat(it).language })
+                if (spoken != null && spoken !in languages) player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+                    .setPreferredTextLanguages(*languages.toTypedArray()).build()
+            }
+        })
         // Resume at the keyframe nearest your spot rather than the exact frame: the player can start drawing at once
         // instead of first downloading and decoding everything from the keyframe before it.
         player.setSeekParameters(androidx.media3.exoplayer.SeekParameters.CLOSEST_SYNC)

@@ -139,6 +139,20 @@ object Addons {
         throw last ?: IllegalStateException("No addon has details for $id")
     }
 
+    /**
+     * Subtitles for a movie or episode from every addon that serves them (OpenSubtitles, SubSense, or any other), in
+     * addon order. A slow or broken addon only loses its own. Network; call off the main thread.
+     */
+    fun subtitles(ctx: Context, type: String, videoId: String): List<Subtitle> =
+        list(ctx).filter { it.serves("subtitles", type, videoId) }.map { a ->
+            Net.fan.submit(Callable {
+                val arr = JSONObject(Net.get("${a.base}/subtitles/$type/${enc(videoId)}.json")).optJSONArray("subtitles") ?: JSONArray()
+                List(arr.length()) { arr.getJSONObject(it) }.mapNotNull { o ->
+                    o.optString("url").takeIf { it.startsWith("http") }?.let { Subtitle(o.optString("lang"), it, a.name) }
+                }
+            })
+        }.flatMap { runCatching { it.get(8, TimeUnit.SECONDS) }.getOrDefault(emptyList()) }
+
     /** Streams from every addon that serves them, in addon order. A slow or broken addon only loses its own rows. */
     fun streams(ctx: Context, type: String, videoId: String): List<Stream> =
         list(ctx).filter { it.serves("stream", type, videoId) }.map { a ->

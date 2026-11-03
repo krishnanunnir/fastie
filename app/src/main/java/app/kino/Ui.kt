@@ -316,11 +316,13 @@ fun crossfade(layers: Pair<ImageView, ImageView>, url: String?, width: Int) {
 fun lp(w: Int = ViewGroup.LayoutParams.MATCH_PARENT, h: Int = ViewGroup.LayoutParams.WRAP_CONTENT) = LinearLayout.LayoutParams(w, h)
 
 
-/** The Kino lockup, the k and "kino" in amber: the brand on the TV tab bar and the phone's home. */
+/** The brand: the K alone on the TV tab bar, the full lockup (the k and "kino") on the phone's Home. */
 fun Context.wordmark() = LinearLayout(this).apply {
     gravity = Gravity.CENTER_VERTICAL
     contentDescription = "Kino"
-    addView(ImageView(context).apply { setImageResource(R.drawable.kino_logo) }, lp(dp(94), dp(28)))
+    // TV: just the K beside the tabs, which name the pages already; phone: the full lockup over Home.
+    if (isTv) addView(ImageView(context).apply { setImageResource(R.drawable.kino_k) }, lp(dp(29), dp(32)))
+    else addView(ImageView(context).apply { setImageResource(R.drawable.kino_logo) }, lp(dp(94), dp(28)))
 }
 
 /** A small rounded label: [solid] is white with ground ink (quality), otherwise a hairline outline (tags). */

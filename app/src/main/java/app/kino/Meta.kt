@@ -68,6 +68,9 @@ class Video(val id: String, val title: String, val season: Int, val episode: Int
     }
 }
 
+/** One subtitle file an addon offers: its language as the addon wrote it ("eng", "en", "English"), and who offered it. */
+class Subtitle(val lang: String, val url: String, val source: String)
+
 /** A direct [url], or a torrent ([hash]) that only plays through debrid. */
 class Stream(
     val addon: String, val name: String, val title: String, val url: String?, val subtitles: List<Pair<String, String>>,
@@ -150,4 +153,34 @@ fun rankStreams(streams: List<Stream>, maxHeight: Int, maxMbps: Double, minutes:
             .thenByDescending { if (fits(it)) it.height else 0 }
             .thenBy { if (fits(it)) -(it.gigabytes ?: 0.0) else it.gigabytes ?: Double.MAX_VALUE }
     )
+}
+
+private val iso2 by lazy { java.util.Locale.getISOLanguages().toSet() }
+private val iso3 by lazy { java.util.Locale.getISOLanguages().associateBy { java.util.Locale(it).isO3Language } }
+// The older ISO 639-2/B codes OpenSubtitles and others still send ("fre" for French), which Java's table doesn't know.
+private val bibliographic = mapOf(
+    "alb" to "sq", "arm" to "hy", "baq" to "eu", "bur" to "my", "chi" to "zh", "cze" to "cs", "dut" to "nl", "fre" to "fr",
+    "geo" to "ka", "ger" to "de", "gre" to "el", "ice" to "is", "mac" to "mk", "may" to "ms", "per" to "fa", "rum" to "ro",
+    "slo" to "sk", "wel" to "cy", "pob" to "pt", // pob: OpenSubtitles' Brazilian Portuguese
+)
+private val names by lazy { java.util.Locale.getISOLanguages().associateBy { java.util.Locale(it).getDisplayLanguage(java.util.Locale.ENGLISH).lowercase() } }
+
+/** "eng", "en", "English", "pt-BR" → "en"/"pt": the 2-letter code, or null when it isn't a language. */
+fun langCode(raw: String?): String? {
+    val s = raw?.trim()?.lowercase()?.substringBefore('-')?.substringBefore('_') ?: return null
+    return when {
+        s.length == 2 -> s.takeIf { it in iso2 }
+        s.length == 3 -> iso3[s] ?: bibliographic[s]
+        else -> names[s]
+    }
+}
+
+/**
+ * Which subtitles to offer: in [langs] (your languages, in order), up to 4 of each, each link once; when none are in
+ * your languages, the first 10 of whatever there is, so a film still has something.
+ */
+fun pickSubtitles(all: List<Subtitle>, langs: List<String>): List<Subtitle> {
+    val unique = all.distinctBy { it.url }
+    val mine = langs.flatMap { l -> unique.filter { langCode(it.lang) == l }.take(4) }
+    return mine.ifEmpty { unique.take(10) }
 }

@@ -95,5 +95,14 @@ class LogicTest {
             Row("Same", items("1", "2", "3", "9", "10")), Row("B", items("11", "12", "13", "14", "15")))
         assertEquals(listOf("A", "B"), curateRows(rows).map { it.title })
     }
+
+    @Test fun subtitles() {
+        assertEquals("en", langCode("eng")); assertEquals("en", langCode("English")); assertEquals("pt", langCode("pt-BR"))
+        assertEquals("pt", langCode("pob")); assertEquals("fr", langCode("fre")); assertEquals("de", langCode("ger")); assertEquals(null, langCode("??"))
+        val subs = listOf(Subtitle("fre", "f1", "O"), Subtitle("eng", "e1", "O"), Subtitle("en", "e2", "S"), Subtitle("eng", "e1", "S"),
+            Subtitle("eng", "e3", "O"), Subtitle("eng", "e4", "O"), Subtitle("eng", "e5", "O"), Subtitle("hin", "h1", "O"))
+        assertEquals(listOf("e1", "e2", "e3", "e4", "h1"), pickSubtitles(subs, listOf("en", "hi")).map { it.url })
+        assertEquals(listOf("f1"), pickSubtitles(subs.take(1), listOf("en")).map { it.url })
+    }
 }
 
