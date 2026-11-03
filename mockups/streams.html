@@ -1,0 +1,58 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Streams mockup</title>
+<style>
+:root{--ground:#08080A;--c:#17171A;--ch:#222226;--chh:#2E2E33;--v:#A3A3AB;--ov:#3A3A42;--amber:#FFB627}
+*{box-sizing:border-box;margin:0}
+body{background:#000;font-family:Roboto,"Helvetica Neue",Arial,sans-serif;color:#fff}
+.screen{position:relative;overflow:hidden;background:var(--ground)}
+.tv{width:960px;height:540px}.phone{width:390px;height:844px}
+.art{position:absolute;inset:0;background:
+ radial-gradient(ellipse at 75% 30%,#c46a2e 0,#6b2f1a 30%,#1c1012 60%,transparent 80%),
+ linear-gradient(160deg,#3a2418,#0c0a0b)}
+.phone .art{height:40%}
+.scrim{position:absolute;inset:0;background:linear-gradient(90deg,var(--ground) 0,rgba(8,8,10,.94) 20%,rgba(8,8,10,.7) 45%,rgba(8,8,10,.25) 70%,transparent)}
+.dim{position:absolute;inset:0;background:rgba(8,8,10,.7)}
+.phone .scrim{background:linear-gradient(0deg,var(--ground) 60%,rgba(8,8,10,.8) 80%,transparent)}
+.col{position:relative;padding:40px 48px 48px;width:760px}
+.phone .col{width:auto;padding:56px 16px 48px}
+h1{font-size:40px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.phone h1{font-size:34px}
+.meta{font-weight:500;font-size:16px;color:var(--v);margin-top:8px}
+.phone .meta{font-size:13px}
+.status{margin-top:24px}
+.bar{width:200px;height:4px;border-radius:2px;background:rgba(255,255,255,.3);margin-top:12px;overflow:hidden}
+.bar i{display:block;height:100%;width:72%;background:var(--amber);border-radius:2px}
+.chips{display:flex;gap:8px;margin-top:20px}
+.chip{border:1px solid var(--ov);color:var(--v);border-radius:20px;padding:0 16px;height:40px;display:flex;align-items:center;font-weight:700;font-size:16px}
+.phone .chip{height:36px;font-size:14px;padding:0 14px}
+.chip.sel{background:rgba(255,255,255,.18);border-color:transparent;color:#fff}
+.sec{font-weight:500;font-size:19px;padding:28px 4px 12px}
+.phone .sec{font-size:17px}
+.sec span{color:var(--v)}
+.row{display:flex;align-items:center;background:var(--c);border-radius:6px;padding:14px 18px 14px 14px;margin-bottom:8px}
+.badge{width:68px;flex:none;margin-right:16px;min-height:34px;display:flex;align-items:center;justify-content:center;background:var(--chh);border-radius:4px;font-weight:700;font-size:16px}
+.phone .badge{width:58px;min-height:30px;font-size:14px}
+.badge.none{visibility:hidden}
+.t{font-weight:700;font-size:16px;line-height:1.1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.d{font-weight:500;font-size:16px;color:var(--v);margin-top:6px;line-height:1.1}
+.phone .t{font-size:14px}.phone .d{font-size:13px}
+.row.f{background:#fff}.row.f .t{color:var(--ground)}.row.f .d{color:#4A4A52}.row.f .badge{background:var(--ground)}
+</style></head><body>
+<template id="body">
+ <h1>The Bear</h1>
+ <div class="meta">Season 2, Episode 1  ·  Beef</div>
+ <div class="meta status">9 streams so far  ·  waiting on MediaFusion</div>
+ <div class="bar"><i></i></div>
+ <div class="chips"><div class="chip sel">All</div><div class="chip">4K</div><div class="chip">1080p</div><div class="chip">720p</div></div>
+ <div class="sec">Torrentio <span>&nbsp;6</span></div>
+ <div class="row f"><div class="badge">4K</div><div><div class="t">The Bear S02E01 2160p WEB-DL DDP5.1 Atmos DV HDR H 265-FLUX</div><div class="d">DV  ·  HDR  ·  HEVC  ·  WEB-DL  ·  Atmos  ·  DD+  ·  5.1  ·  15.2 GB  ·  12 seeders  ·  ThePirateBay</div></div></div>
+ <div class="row"><div class="badge">4K</div><div><div class="t">The Bear S02E01 2160p HULU WEB-DL DDP5.1 H 265-NTb</div><div class="d">HEVC  ·  WEB-DL  ·  DD+  ·  5.1  ·  9.8 GB  ·  31 seeders  ·  1337x</div></div></div>
+ <div class="row"><div class="badge">1080p</div><div><div class="t">The Bear S02E01 1080p WEB H264-SuccessfulCrab</div><div class="d">2.4 GB  ·  208 seeders  ·  EZTV  ·  Subtitles</div></div></div>
+ <div class="row"><div class="badge">720p</div><div><div class="t">The Bear S02E01 720p WEB x265-MiNX</div><div class="d">HEVC  ·  412 MB  ·  96 seeders  ·  TorrentGalaxy</div></div></div>
+ <div class="sec">Comet <span>&nbsp;3</span></div>
+ <div class="row"><div class="badge">1080p</div><div><div class="t">The Bear S02E01 Beef 1080p DSNP WEB-DL DDP5.1 H 264</div><div class="d">WEB-DL  ·  DD+  ·  5.1  ·  3.1 GB</div></div></div>
+ <div class="row"><div class="badge none">-</div><div><div class="t">Direct  Server 2</div></div></div>
+</template>
+<div class="screen tv" id="tv"><div class="art"></div><div class="scrim"></div><div class="dim"></div><div class="col"></div></div>
+<div class="screen phone" id="phone"><div class="art"></div><div class="scrim"></div><div class="dim"></div><div class="col"></div></div>
+<script>document.querySelectorAll('.col').forEach(c=>c.innerHTML=document.getElementById('body').innerHTML)</script>
+</body></html>
