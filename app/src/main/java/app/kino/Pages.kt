@@ -183,6 +183,10 @@ class SettingsPage(private val a: MainActivity) {
             Store.setExternalPlayer(a, !external); refresh()
         }
 
+        col.addView(a.sectionTitle("Debrid"))
+        if (TorBox.key(a) != null) row("TorBox: connected", "Cached torrents from your addons play through TorBox. Tap to change or remove the key.") { torBox() }
+        else row("Connect TorBox", "Paste your TorBox API key so torrents from your addons can play. It stays on this device.") { torBox() }
+
         col.addView(a.sectionTitle("About"))
         row("Kino ${a.packageManager.getPackageInfo(a.packageName, 0).versionName}",
             "Plays what your addons provide. Kino hosts no content and isn't affiliated with Nuvio or Stremio.")
@@ -223,6 +227,29 @@ class SettingsPage(private val a: MainActivity) {
                         .onFailure { a.say("Couldn't add that addon. Check the link and try again.") }
                 }
             }.setNegativeButton("Cancel", null).show()
+    }
+
+    /** Asks for a TorBox API key, checks it with TorBox, and keeps it on this device. */
+    private fun torBox() {
+        val box = a.textField("TorBox API key").apply {
+            endIconMode = com.google.android.material.textfield.TextInputLayout.END_ICON_PASSWORD_TOGGLE
+            setEndIconTintList(android.content.res.ColorStateList.valueOf(C.variant))
+            editText!!.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+            editText!!.typeface = android.graphics.Typeface.DEFAULT
+        }
+        val form = FrameLayout(a).apply { setPadding(a.dp(24), a.dp(8), a.dp(24), 0); addView(box) }
+        MaterialAlertDialogBuilder(a).setTitle("TorBox").setMessage("Find your key at torbox.app/settings, under API.").setView(form)
+            .setPositiveButton("Save") { _, _ ->
+                val key = box.editText!!.text.toString().trim()
+                if (key.isBlank()) return@setPositiveButton
+                a.say("Checking your TorBox key…")
+                a.load({ TorBox.check(key) }) { r ->
+                    r.onSuccess { TorBox.setKey(a, key); a.say("TorBox connected"); refresh() }
+                        .onFailure { a.say(if (it is HttpException && it.code in 401..403) "TorBox didn't accept that key." else "Couldn't reach TorBox. Try again.") }
+                }
+            }
+            .apply { if (TorBox.key(a) != null) setNeutralButton("Remove") { _, _ -> TorBox.setKey(a, null); a.say("TorBox removed"); refresh() } }
+            .setNegativeButton("Cancel", null).show()
     }
 }
 

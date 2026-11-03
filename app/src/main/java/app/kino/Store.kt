@@ -92,4 +92,18 @@ object Store {
     fun externalPlayer(ctx: Context) = prefs(ctx, "settings").getBoolean("external_player", false)
 
     fun setExternalPlayer(ctx: Context, on: Boolean) = prefs(ctx, "settings").edit().putBoolean("external_player", on).apply()
+
+    // The link each video last played from, reused for 3 hours (as long as TorBox links last) so Resume starts at once.
+
+    private const val LINK_MS = 3 * 60 * 60 * 1000L
+
+    /** The last link for [videoId] and its subtitles JSON, if it's still fresh. */
+    fun lastLink(ctx: Context, videoId: String): Pair<String, String>? = prefs(ctx, "links").getString(videoId, null)
+        ?.let { runCatching { JSONObject(it) }.getOrNull() }
+        ?.takeIf { System.currentTimeMillis() - it.optLong("at") < LINK_MS }
+        ?.let { it.getString("url") to it.optString("subs", "[]") }
+
+    fun saveLink(ctx: Context, videoId: String, url: String?, subs: String = "[]") = prefs(ctx, "links").edit().apply {
+        if (url == null) remove(videoId) else putString(videoId, JSONObject().put("url", url).put("subs", subs).put("at", System.currentTimeMillis()).toString())
+    }.apply()
 }

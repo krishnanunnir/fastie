@@ -68,15 +68,52 @@ class Video(val id: String, val title: String, val season: Int, val episode: Int
     }
 }
 
-class Stream(val addon: String, val name: String, val title: String, val url: String, val subtitles: List<Pair<String, String>>) {
+/** A direct [url], or a torrent ([hash]) that only plays through debrid. */
+class Stream(
+    val addon: String, val name: String, val title: String, val url: String?, val subtitles: List<Pair<String, String>>,
+    val hash: String? = null, val fileIdx: Int? = null, val filename: String? = null,
+) {
+    /** The vertical resolution the addon advertises ("2160p", "4K"), or 0. */
+    val height: Int by lazy {
+        Regex("""\b(2160|1440|1080|720|576|480)p\b|\b4k\b""", RegexOption.IGNORE_CASE).find("$name $title")
+            ?.let { if (it.groupValues[1].isEmpty()) 2160 else it.groupValues[1].toInt() } ?: 0
+    }
+
+    /** The file size the addon advertises ("💾 45.3 GB"), in GB, or null. */
+    val gigabytes: Double? by lazy {
+        Regex("""(\d+(?:[.,]\d+)?)\s*(GB|GiB|MB|MiB)\b""").find(title)?.let { m ->
+            m.groupValues[1].replace(',', '.').toDouble() / if (m.groupValues[2].startsWith("M")) 1024 else 1
+        }
+    }
+
     companion object {
-        /** Null for streams Kino can't play: torrents (infoHash) and YouTube ids need engines we don't ship. */
+        /** Null for streams Kino can't play at all, such as YouTube ids or links out to other apps. */
         fun from(addon: String, o: JSONObject): Stream? {
-            val url = o.str("url") ?: return null
+            val url = o.str("url")
+            val hash = o.str("infoHash")?.lowercase()
+            if (url == null && hash == null) return null
             val subs = o.optJSONArray("subtitles")?.let { a ->
                 List(a.length()) { a.getJSONObject(it) }.mapNotNull { s -> s.str("url")?.let { (s.str("lang") ?: "") to it } }
             }.orEmpty()
-            return Stream(addon, o.str("name") ?: addon, o.str("title") ?: o.str("description") ?: "", url, subs)
+            return Stream(addon, o.str("name") ?: addon, o.str("title") ?: o.str("description") ?: "", url, subs,
+                hash = if (url == null) hash else null,
+                fileIdx = if (o.has("fileIdx")) o.optInt("fileIdx") else null,
+                filename = o.optJSONObject("behaviorHints")?.str("filename"))
         }
     }
+}
+
+/**
+ * Best first for this screen and connection: one row per torrent, then streams at or under [maxHeight] whose bitrate
+ * fits [maxMbps] (the higher-quality of those first), then the rest, smallest first so they're likelier to keep up.
+ * ponytail: bitrate is size over an assumed [minutes]; pass the real runtime if addons start sending it reliably.
+ */
+fun rankStreams(streams: List<Stream>, maxHeight: Int, maxMbps: Double, minutes: Int): List<Stream> {
+    fun mbps(s: Stream) = s.gigabytes?.let { it * 8 * 1024 / (minutes * 60) }
+    fun fits(s: Stream) = s.height in 1..maxHeight && (mbps(s)?.let { it <= maxMbps } ?: true)
+    return streams.distinctBy { it.hash ?: it.url }.sortedWith(
+        compareByDescending<Stream> { fits(it) }
+            .thenByDescending { if (fits(it)) it.height else 0 }
+            .thenBy { if (fits(it)) -(it.gigabytes ?: 0.0) else it.gigabytes ?: Double.MAX_VALUE }
+    )
 }

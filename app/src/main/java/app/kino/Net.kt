@@ -20,7 +20,14 @@ object Net {
 
     fun post(url: String, body: String, headers: Map<String, String> = emptyMap()) = request("POST", url, body, headers)
 
-    private fun request(method: String, url: String, body: String?, headers: Map<String, String>): String {
+    /** A multipart/form-data POST of plain text fields. */
+    fun form(url: String, fields: Map<String, String>, headers: Map<String, String> = emptyMap()): String {
+        val b = "kino" + System.nanoTime()
+        val body = fields.entries.joinToString("") { (k, v) -> "--$b\r\nContent-Disposition: form-data; name=\"$k\"\r\n\r\n$v\r\n" } + "--$b--\r\n"
+        return request("POST", url, body, headers, "multipart/form-data; boundary=$b")
+    }
+
+    private fun request(method: String, url: String, body: String?, headers: Map<String, String>, type: String = "application/json"): String {
         val c = URL(url).openConnection() as HttpURLConnection
         try {
             c.connectTimeout = 10_000
@@ -29,7 +36,7 @@ object Net {
             headers.forEach(c::setRequestProperty)
             if (body != null) {
                 c.doOutput = true
-                c.setRequestProperty("Content-Type", "application/json")
+                c.setRequestProperty("Content-Type", type)
                 c.outputStream.use { it.write(body.toByteArray()) }
             }
             val code = c.responseCode

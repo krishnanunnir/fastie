@@ -102,6 +102,11 @@ object Nuvio {
 
     /** Pulls addons, My List and progress into the local stores. */
     fun pull(ctx: Context) {
+        // Phone-code sign-in returns a session without its user, so look the email up once.
+        if (email(ctx) == null) runCatching {
+            JSONObject(Net.get("${backend(ctx)}/auth/v1/user", authHeaders(ctx))).optString("email").takeIf { it.isNotBlank() }
+                ?.let { prefs(ctx).edit().putString("email", it).apply() }
+        }
         val rows = JSONArray(Net.get("${backend(ctx)}/rest/v1/addons?select=url,enabled&profile_id=eq.$PROFILE&order=sort_order.asc", authHeaders(ctx)))
         val urls = List(rows.length()) { rows.getJSONObject(it) }.filter { it.optBoolean("enabled", true) }.map { it.getString("url") }
         if (urls.isNotEmpty()) Addons.replaceAll(ctx, urls)

@@ -61,7 +61,7 @@ class MainActivity : Activity(), PosterHost {
         home = HomePage(this)
         show(0)
         // Each launch picks up what changed on other devices.
-        if (Nuvio.signedIn(this)) load({ Nuvio.pull(this) }) { if (it.isSuccess) home.reload() }
+        if (Nuvio.signedIn(this)) load({ Nuvio.pull(this) }) { if (it.isSuccess) { home.reload(); settings?.refresh() } }
     }
 
     override fun onResume() {
