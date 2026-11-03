@@ -1,5 +1,9 @@
 # Kino
 
+<p>
+  <img src="assets/branding/kino-logo.svg" alt="Kino logo" width="320">
+</p>
+
 A very light way to watch what your Stremio-style addons provide, on Android TV and phones. One APK of about 5 MB.
 
 - **Netflix-style browsing.** As you move around, the title you're on fills the screen, with rows of posters below.
