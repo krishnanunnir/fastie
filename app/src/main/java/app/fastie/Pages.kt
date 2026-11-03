@@ -135,6 +135,7 @@ class LibraryPage(private val a: MainActivity) {
         val items = Store.library(a)
         grid.adapter = PosterAdapter(items, host, fill = true)
         empty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+        grid.isFocusable = items.isNotEmpty() // an empty grid would swallow D-pad focus invisibly
     }
 }
 

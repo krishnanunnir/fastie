@@ -138,7 +138,8 @@ class MainActivity : Activity(), PosterHost {
             else -> SettingsPage(this).also { settings = it }.view.apply { setPadding(0, topInset, 0, 0) }
         }.also { views[i] = it; pages.addView(it, FrameLayout.LayoutParams(-1, -1).apply { topMargin = if (isTv && i != 0) dp(TABS) else 0 }) }
         views.forEach { it?.visibility = if (it === v) View.VISIBLE else View.GONE }
-        nav.forEach { tint(it, it.tag as Int); if (isTv && it.findFocus() == null) it.isFocusable = it.tag == i }
+        val inTabs = nav.any { it.isFocused }
+        nav.forEach { tint(it, it.tag as Int); if (isTv && !inTabs) it.isFocusable = it.tag == i }
         when (i) {
             1 -> search?.focus()
             2 -> library?.refresh()
