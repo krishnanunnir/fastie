@@ -341,7 +341,7 @@ class SettingsPage(private val a: MainActivity) {
                 trailing = toggle) { Store.setExternalPlayer(a, !external); refresh() }
             val debrid = Debrid.connected(a)
             if (debrid != null) groupRow(debrid.service.label, debridPlan ?: "Cached torrents from your addons play through it",
-                leading = a.initial(debrid.service.label), trailing = a.pill("Connected", solid = true)) { debridKey(debrid.service) }
+                leading = a.initial(debrid.service.label), trailing = a.pill("Connected", solid = true)) { chooseDebrid() }
             else groupRow("Debrid service", "Connect TorBox, Real-Debrid and others so torrents can play",
                 leading = a.initial("D"), trailing = a.chevron()) { chooseDebrid() }
             // The plan and expiry come from the service, once per visit to Settings.
@@ -470,13 +470,14 @@ class SettingsPage(private val a: MainActivity) {
         sheet.dialog.show()
     }
 
-    /** The debrid services to pick from, one of which gets connected. */
+    /** The debrid services to pick from, one of which gets connected (or switched to, or removed). */
     private fun chooseDebrid() {
-        val sheet = a.sheet("Debrid service", "Pick the one you have an account with")
+        val now = Debrid.connected(a)?.service
+        val sheet = a.sheet("Debrid service", if (now == null) "Pick the one you have an account with" else "One is connected at a time; picking another replaces ${now.label}")
         val pad = a.dp(if (a.isTv) 32 else 20)
         sheet.body.addView(a.group().apply {
             Debrid.entries.forEach { s ->
-                groupRow(s.label, "Your API key is at ${s.keyAt}", leading = a.initial(s.label), trailing = a.chevron()) { sheet.dialog.dismiss(); debridKey(s) }
+                groupRow(s.label, "Your API key is at ${s.keyAt}", leading = a.initial(s.label), trailing = if (s == now) a.pill("Connected", solid = true) else a.chevron()) { sheet.dialog.dismiss(); debridKey(s) }
             }
         }, lp().apply { setMargins(pad, 0, pad, 0) })
         sheet.dialog.show()
