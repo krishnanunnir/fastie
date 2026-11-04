@@ -26,6 +26,7 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 import org.json.JSONArray
@@ -36,6 +37,7 @@ import org.json.JSONObject
 class PlayerActivity : Activity() {
     private lateinit var player: ExoPlayer
     private lateinit var view: PlayerView
+    private lateinit var data: DataSource.Factory
     private lateinit var item: Item
     private lateinit var videoId: String
     private var season: Int? = null
@@ -46,6 +48,7 @@ class PlayerActivity : Activity() {
 
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
+        Timing.mark("player created")
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         @Suppress("DEPRECATION")
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
@@ -61,16 +64,23 @@ class PlayerActivity : Activity() {
             val own = MediaCodecSelector.DEFAULT.getDecoderInfos(mime, secure, tunneling)
             if (mime == MimeTypes.VIDEO_DOLBY_VISION) own + MediaCodecSelector.DEFAULT.getDecoderInfos(MimeTypes.VIDEO_H265, secure, tunneling) else own
         }
-        val renderers = DefaultRenderersFactory(this).setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+        // Legacy decoding: subtitles from addons arrive unparsed (see LateSubtitles); the video's own come parsed either way.
+        val renderers = object : DefaultRenderersFactory(this) {
+            override fun buildTextRenderers(context: android.content.Context, output: androidx.media3.exoplayer.text.TextOutput,
+                                            looper: android.os.Looper, mode: Int, out: ArrayList<androidx.media3.exoplayer.Renderer>) {
+                out += androidx.media3.exoplayer.text.TextRenderer(output, looper).apply { experimentalSetLegacyDecodingEnabled(true) }
+            }
+        }.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
             .setMediaCodecSelector(decoders).setEnableDecoderFallback(true)
         // Audio in the phone's languages, then English, rather than whichever track the file flags as default.
         // Forced subtitles follow the audio language, so this also stops foreign forced subtitles showing.
         val tracks = DefaultTrackSelector(this).apply {
             setParameters(buildUponParameters().setPreferredAudioLanguages(*languages.distinct().toTypedArray()))
         }
-        // Start after 1.5s of video instead of 2.5s; debrid links are fast enough that the rest fills while it plays.
+        // Start after half a second of video instead of 2.5s; debrid links are fast enough that the rest fills while it
+        // plays. After a stall it waits for 3s, so a slow link doesn't stutter.
         val buffer = DefaultLoadControl.Builder().setBufferDurationsMs(
-            DefaultLoadControl.DEFAULT_MIN_BUFFER_MS, DefaultLoadControl.DEFAULT_MAX_BUFFER_MS, 1_500, 3_000).build()
+            DefaultLoadControl.DEFAULT_MIN_BUFFER_MS, DefaultLoadControl.DEFAULT_MAX_BUFFER_MS, 500, 3_000).build()
         // Counts what arrives, so the loading screen can show the download speed.
         val http = DefaultHttpDataSource.Factory().setTransferListener(object : TransferListener {
             override fun onTransferInitializing(source: DataSource, spec: DataSpec, network: Boolean) {}
@@ -78,8 +88,8 @@ class PlayerActivity : Activity() {
             override fun onBytesTransferred(source: DataSource, spec: DataSpec, network: Boolean, bytes: Int) { received.addAndGet(bytes.toLong()) }
             override fun onTransferEnd(source: DataSource, spec: DataSpec, network: Boolean) {}
         })
+        data = DefaultDataSource.Factory(this, http)
         player = ExoPlayer.Builder(this, renderers).setTrackSelector(tracks).setLoadControl(buffer)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(this, http)))
             .setSeekBackIncrementMs(10_000).setSeekForwardIncrementMs(10_000).build()
         view = PlayerView(this).apply {
             this.player = this@PlayerActivity.player
@@ -109,7 +119,7 @@ class PlayerActivity : Activity() {
         val subs = intent.getStringExtra("subs") ?: "[]"
         val debrid = Debrid.connected(this)
         val type = intent.getStringExtra("type")!!
-        subtitlesAhead = Net.fan.submit(java.util.concurrent.Callable { Addons.subtitles(this, type, videoId) })
+        subtitlesAhead = Net.fan.submit(java.util.concurrent.Callable { Addons.subtitles(this, type, videoId).also { Timing.mark("subtitles: ${it.size}") } })
         when {
             url != null -> start(url, subs)
             hash != null && debrid != null -> prepare("Getting the video from ${debrid.label}…", {
@@ -130,7 +140,6 @@ class PlayerActivity : Activity() {
 
     // Subtitles from every subtitle addon, asked for as the player opens so they're usually in by the time the link is.
     private var subtitlesAhead: java.util.concurrent.Future<List<Subtitle>>? = null
-    private val openedAt = android.os.SystemClock.elapsedRealtime()
 
     // What the cover says while there's no link yet; null once the player has one.
     @Volatile private var waiting: String? = null
@@ -140,42 +149,42 @@ class PlayerActivity : Activity() {
         waiting = status
         load(work) { r ->
             waiting = null
+            Timing.mark("link ready")
             r.onSuccess { (link, subs) -> Store.saveLink(this, videoId, link, subs); start(link, subs) }
                 .onFailure { failCover(it.message ?: "Couldn't play this one. Go back and try again.") }
         }
     }
 
     /**
-     * Gives the subtitle addons until about 2s after the player opened (they've usually answered while the link was
-     * being found), then plays: subtitles can't be added once a video has started without restarting it.
+     * Plays at once. Subtitles load beside the video: the addons get up to 2s more (they've usually answered while the
+     * link was being found), and only the player's last step of getting ready waits for them.
      */
     private fun start(url: String, subsJson: String) {
         val fromStream = JSONArray(subsJson).let { a -> List(a.length()) { a.getJSONObject(it) } }
             .map { Subtitle(it.optString("lang"), it.getString("url"), "stream") }
         val ahead = subtitlesAhead
-        if (ahead == null || ahead.isDone) return begin(url, fromStream + (runCatching { ahead?.get() }.getOrNull() ?: emptyList()))
-        waiting = "Getting subtitles…"
-        load({
-            val left = (2_000 - (android.os.SystemClock.elapsedRealtime() - openedAt)).coerceAtLeast(300)
-            runCatching { ahead.get(left, java.util.concurrent.TimeUnit.MILLISECONDS) }.getOrNull() ?: emptyList()
-        }) { r -> waiting = null; begin(url, fromStream + r.getOrDefault(emptyList())) }
+        begin(url, Net.fan.submit(java.util.concurrent.Callable {
+            subtitleConfigs(fromStream + (runCatching { ahead?.get(2, java.util.concurrent.TimeUnit.SECONDS) }.getOrNull() ?: emptyList()))
+        }))
     }
 
-    private fun begin(url: String, offered: List<Subtitle>) {
-        val subs = pickSubtitles(offered, languages).map { s ->
-            val code = langCode(s.lang)
-            val name = code?.let { java.util.Locale(it).getDisplayLanguage(java.util.Locale.getDefault()).replaceFirstChar(Char::uppercase) } ?: s.lang.ifBlank { "Subtitles" }
-            MediaItem.SubtitleConfiguration.Builder(Uri.parse(s.url))
-                .setMimeType(when {
-                    s.url.contains(".vtt", true) -> MimeTypes.TEXT_VTT
-                    s.url.contains(".ass", true) || s.url.contains(".ssa", true) -> MimeTypes.TEXT_SSA
-                    else -> MimeTypes.APPLICATION_SUBRIP
-                })
-                .setLanguage(code ?: s.lang.ifBlank { null })
-                .setLabel(if (s.source == "stream") name else "$name · ${s.source}")
-                .build()
-        }
-        player.setMediaItem(MediaItem.Builder().setUri(url).setSubtitleConfigurations(subs).build())
+    private fun subtitleConfigs(offered: List<Subtitle>) = pickSubtitles(offered, languages).map { s ->
+        val code = langCode(s.lang)
+        val name = code?.let { java.util.Locale(it).getDisplayLanguage(java.util.Locale.getDefault()).replaceFirstChar(Char::uppercase) } ?: s.lang.ifBlank { "Subtitles" }
+        MediaItem.SubtitleConfiguration.Builder(Uri.parse(s.url))
+            .setMimeType(when {
+                s.url.contains(".vtt", true) -> MimeTypes.TEXT_VTT
+                s.url.contains(".ass", true) || s.url.contains(".ssa", true) -> MimeTypes.TEXT_SSA
+                else -> MimeTypes.APPLICATION_SUBRIP
+            })
+            .setLanguage(code ?: s.lang.ifBlank { null })
+            .setLabel(if (s.source == "stream") name else "$name · ${s.source}")
+            .build()
+    }
+
+    private fun begin(url: String, subs: java.util.concurrent.Future<List<MediaItem.SubtitleConfiguration>>) {
+        Timing.mark("prepare")
+        player.setMediaSource(MergingMediaSource(DefaultMediaSourceFactory(data).createMediaSource(MediaItem.fromUri(url)), LateSubtitles(subs, data)))
         // Subtitles switch on by themselves only when the audio isn't in one of your languages (a foreign film);
         // otherwise they wait in the CC menu.
         player.addListener(object : Player.Listener {
@@ -200,7 +209,7 @@ class PlayerActivity : Activity() {
             }
         })
         player.addListener(object : Player.Listener {
-            override fun onRenderedFirstFrame() { hideCover() }
+            override fun onRenderedFirstFrame() { Timing.mark("FIRST FRAME"); hideCover() }
 
             override fun onPlayerError(error: PlaybackException) {
                 hideCover()
@@ -290,7 +299,7 @@ class PlayerActivity : Activity() {
 
     /**
      * Four times a second while the cover shows: the download speed, and once video is buffered past where playback
-     * starts, how much of the 1.5s it needs. Before that (reading the file's index, reaching the right spot) the line
+     * starts, how much of the half second it needs. Before that (reading the file's index, reaching the right spot) the line
      * stays indeterminate, since there's nothing honest to measure.
      */
     private val progress = object : Runnable {
@@ -305,7 +314,7 @@ class PlayerActivity : Activity() {
             if (now > lastAt) speed = speed * 0.6 + (bytes - lastBytes) * 1000.0 / (now - lastAt) * 0.4
             lastBytes = bytes; lastAt = now
             val ahead = (player.bufferedPosition - player.currentPosition).coerceAtLeast(0)
-            val fraction = if (player.playbackState == Player.STATE_BUFFERING && ahead > 0) (ahead / 1500f).coerceAtMost(1f) else 0f
+            val fraction = if (player.playbackState == Player.STATE_BUFFERING && ahead > 0) (ahead / 500f).coerceAtMost(1f) else 0f
             if (fraction > 0) coverBar.setProgressCompat((fraction * 1000).toInt(), true)
             val rate = if (speed >= 1e6) "%.1f MB/s".format(speed / 1e6) else "%.0f KB/s".format(speed / 1e3)
             coverStatus.text = when {

@@ -11,6 +11,12 @@ import java.util.concurrent.Executors
 
 class HttpException(val code: Int, body: String) : IOException("HTTP $code ${body.take(200)}")
 
+/** Debug builds log each step from Play to the first frame: adb logcat -s KinoTime */
+object Timing {
+    @Volatile var start = 0L
+    fun mark(stage: String) { if (BuildConfig.DEBUG) android.util.Log.d("KinoTime", "+${android.os.SystemClock.elapsedRealtime() - start}ms $stage") }
+}
+
 object Net {
     val pool = Executors.newFixedThreadPool(6)
     // Fan-out requests (one per addon) wait inside pool tasks; their own pool keeps that from starving.
@@ -36,6 +42,7 @@ object Net {
 
     private fun request(method: String, url: String, body: String?, headers: Map<String, String>, type: String = "application/json"): String {
         val c = URL(url).openConnection() as HttpURLConnection
+        val t = android.os.SystemClock.elapsedRealtime()
         try {
             c.connectTimeout = 10_000
             c.readTimeout = 20_000
@@ -51,6 +58,7 @@ object Net {
             if (code >= 400) throw HttpException(code, text)
             return text
         } finally {
+            if (BuildConfig.DEBUG) Timing.mark("${android.os.SystemClock.elapsedRealtime() - t}ms $method ${c.url.host} …/${c.url.path.substringAfterLast('/')}") // addon paths carry keys
             c.disconnect()
         }
     }

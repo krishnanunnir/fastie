@@ -29,9 +29,11 @@ class Found(val streams: List<Stream>, val torrents: Int, val debrid: String?) {
  */
 fun findStreams(ctx: Context, type: String, videoId: String, episode: Boolean): Found {
     val all = Addons.streams(ctx, type, videoId)
+    Timing.mark("streams: ${all.size}")
     val debrid = Debrid.connected(ctx)
     val torrents = all.filter { it.hash != null }
     val cached = if (debrid != null && torrents.isNotEmpty()) debrid.cached(torrents.map { it.hash!! }) else emptySet()
+    Timing.mark("cache checked")
     val playable = all.filter { it.url != null || (debrid != null && (cached == null || it.hash in cached)) }
     // Phones get 1080p at a bitrate Wi-Fi or mobile data keeps up with; TVs get 4K short of remux bitrates.
     val ranked = rankStreams(playable, if (ctx.isTv) 2160 else 1080, if (ctx.isTv) 40.0 else 20.0, if (episode) 50 else 120)
@@ -68,10 +70,12 @@ fun Activity.playLink(item: Item, url: String, subs: String, type: String, id: S
     startActivity(playerIntent(item, subs, type, id, season, episode).putExtra("url", url))
 }
 
-fun Activity.playerIntent(item: Item, subs: String, type: String, id: String, season: Int, episode: Int) =
-    Intent(this, PlayerActivity::class.java).putExtra("subs", subs)
+fun Activity.playerIntent(item: Item, subs: String, type: String, id: String, season: Int, episode: Int): Intent {
+    Timing.start = android.os.SystemClock.elapsedRealtime(); Timing.mark("play tapped")
+    return Intent(this, PlayerActivity::class.java).putExtra("subs", subs)
         .putExtra("type", type).putExtra("id", id).putExtra("item", item.toJson().toString())
         .putExtra("season", season).putExtra("episode", episode)
+}
 
 /**
  * Plays the best stream for a movie or episode without showing any list: the link it last played from if that's fresh,
