@@ -102,24 +102,24 @@ class PlayerActivity : Activity() {
             addView(cover(), FrameLayout.LayoutParams(-1, -1))
         })
 
-        // Whatever isn't ready yet happens here, behind the poster: a cached torrent gets its link from TorBox, and with
+        // Whatever isn't ready yet happens here, behind the poster: a cached torrent gets its link from debrid, and with
         // nothing chosen (an episode or Continue Watching) the best stream is found first.
         val url = intent.getStringExtra("url")
         val hash = intent.getStringExtra("hash")
         val subs = intent.getStringExtra("subs") ?: "[]"
-        val key = TorBox.key(this)
+        val debrid = Debrid.connected(this)
         val type = intent.getStringExtra("type")!!
         subtitlesAhead = Net.fan.submit(java.util.concurrent.Callable { Addons.subtitles(this, type, videoId) })
         when {
             url != null -> start(url, subs)
-            hash != null && key != null -> prepare("Getting the video from TorBox…", {
-                TorBox.resolve(key, hash, intent.getStringExtra("filename"), intent.getIntExtra("fileIdx", -1).takeIf { it >= 0 }) to subs
+            hash != null && debrid != null -> prepare("Getting the video from ${debrid.service.label}…", {
+                debrid.resolve(hash, intent.getStringExtra("filename"), intent.getIntExtra("fileIdx", -1).takeIf { it >= 0 }) to subs
             })
             else -> prepare("Finding the best stream…", {
                 val found = findStreams(this, type, videoId, season != null)
                 val best = found.streams.firstOrNull() ?: error(found.emptyMessage())
-                waiting = if (best.hash != null) "Getting the video from TorBox…" else "Connecting…"
-                (best.url ?: TorBox.resolve(key!!, best.hash!!, best.filename, best.fileIdx)) to subsJson(best)
+                waiting = if (best.hash != null) "Getting the video from ${debrid!!.service.label}…" else "Connecting…"
+                (best.url ?: debrid!!.resolve(best.hash!!, best.filename, best.fileIdx)) to subsJson(best)
             })
         }
         view.post(progress)

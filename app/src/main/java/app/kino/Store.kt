@@ -106,7 +106,7 @@ object Store {
 
     fun clearRecentSearches(ctx: Context) = prefs(ctx, "settings").edit().remove("recent_searches").apply()
 
-    // The link each video last played from, reused for 3 hours (as long as TorBox links last) so Resume starts at once.
+    // The link each video last played from, reused for 3 hours (as long as debrid links last) so Resume starts at once.
 
     private const val LINK_MS = 3 * 60 * 60 * 1000L
 

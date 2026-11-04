@@ -6,6 +6,7 @@ import android.os.Looper
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 import java.util.concurrent.Executors
 
 class HttpException(val code: Int, body: String) : IOException("HTTP $code ${body.take(200)}")
@@ -26,6 +27,12 @@ object Net {
         val body = fields.entries.joinToString("") { (k, v) -> "--$b\r\nContent-Disposition: form-data; name=\"$k\"\r\n\r\n$v\r\n" } + "--$b--\r\n"
         return request("POST", url, body, headers, "multipart/form-data; boundary=$b")
     }
+
+    /** An urlencoded POST; a list of pairs so a field can repeat (items[]=a&items[]=b). */
+    fun urlForm(url: String, fields: List<Pair<String, String>>, headers: Map<String, String> = emptyMap()) = request("POST", url,
+        fields.joinToString("&") { (k, v) -> URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8") }, headers, "application/x-www-form-urlencoded")
+
+    fun delete(url: String, headers: Map<String, String> = emptyMap()) = request("DELETE", url, null, headers)
 
     private fun request(method: String, url: String, body: String?, headers: Map<String, String>, type: String = "application/json"): String {
         val c = URL(url).openConnection() as HttpURLConnection

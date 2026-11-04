@@ -200,12 +200,12 @@ class DetailsActivity : Activity() {
         renderStreams("Finding streams…")
         load({ findStreams(this, type(), v.id, v.season >= 0) }) { r ->
             if (streamsFor != v.id) return@load
-            val found = r.getOrDefault(Found(emptyList(), 0, false))
+            val found = r.getOrDefault(Found(emptyList(), 0, null))
             streams = found.streams
             renderStreams(found.emptyMessage())
             // Get the best one's link ready too, so Play starts at once.
             streams.firstOrNull()?.takeIf { it.hash != null }?.let { s ->
-                load({ TorBox.resolve(TorBox.key(this)!!, s.hash!!, s.filename, s.fileIdx) }) { l -> l.getOrNull()?.let { links[s.hash] = it } }
+                load({ Debrid.connected(this)!!.resolve(s.hash!!, s.filename, s.fileIdx) }) { l -> l.getOrNull()?.let { links[s.hash] = it } }
             }
         }
     }

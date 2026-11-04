@@ -339,11 +339,13 @@ class SettingsPage(private val a: MainActivity) {
             }
             groupRow("Use another player app", if (external) "Streams open in VLC, mpv or any video app" else "Plays in Kino, with subtitles, audio tracks and resume",
                 trailing = toggle) { Store.setExternalPlayer(a, !external); refresh() }
-            val connected = TorBox.key(a) != null
-            groupRow("TorBox", if (connected) torBoxPlan ?: "Cached torrents from your addons play through it" else "Add your API key so torrents from your addons can play",
-                leading = a.initial("T"), trailing = if (connected) a.pill("Connected", solid = true) else a.chevron()) { torBox() }
-            // The plan and expiry come from TorBox, once per visit to Settings.
-            if (connected && !askedPlan) { askedPlan = true; a.load({ TorBox.plan(TorBox.key(a)!!) }) { r -> r.getOrNull()?.let { torBoxPlan = it; refresh() } } }
+            val debrid = Debrid.connected(a)
+            if (debrid != null) groupRow(debrid.service.label, debridPlan ?: "Cached torrents from your addons play through it",
+                leading = a.initial(debrid.service.label), trailing = a.pill("Connected", solid = true)) { debridKey(debrid.service) }
+            else groupRow("Debrid service", "Connect TorBox, Real-Debrid and others so torrents can play",
+                leading = a.initial("D"), trailing = a.chevron()) { chooseDebrid() }
+            // The plan and expiry come from the service, once per visit to Settings.
+            if (debrid != null && !askedPlan) { askedPlan = true; a.load({ debrid.service.plan(debrid.key) }) { r -> r.getOrNull()?.let { debridPlan = it; refresh() } } }
         })
 
         // About, quietly at the end.
@@ -365,7 +367,7 @@ class SettingsPage(private val a: MainActivity) {
         }
     }
 
-    private var torBoxPlan: String? = null
+    private var debridPlan: String? = null
     private var askedPlan = false
 
     /** What an addon provides, as pills: Catalogs, Streams, Subtitles (or Details when it's none of those). */
@@ -468,12 +470,25 @@ class SettingsPage(private val a: MainActivity) {
         sheet.dialog.show()
     }
 
-    /** Asks for a TorBox API key in a sheet, checks it with TorBox, and keeps it on this device. */
-    private fun torBox() {
-        val connected = TorBox.key(a) != null
-        val sheet = a.sheet("TorBox", "Find your API key at torbox.app/settings. It stays on this device.")
+    /** The debrid services to pick from, one of which gets connected. */
+    private fun chooseDebrid() {
+        val sheet = a.sheet("Debrid service", "Pick the one you have an account with")
         val pad = a.dp(if (a.isTv) 32 else 20)
-        val box = a.textField(if (connected) "Paste a new API key" else "TorBox API key").apply {
+        sheet.body.addView(a.group().apply {
+            Debrid.entries.forEach { s ->
+                groupRow(s.label, "Your API key is at ${s.keyAt}", leading = a.initial(s.label), trailing = a.chevron()) { sheet.dialog.dismiss(); debridKey(s) }
+            }
+        }, lp().apply { setMargins(pad, 0, pad, 0) })
+        sheet.dialog.show()
+    }
+
+    /** Asks for [service]'s API key in a sheet, checks it with the service, and keeps it on this device. */
+    private fun debridKey(service: Debrid) {
+        val name = service.label
+        val connected = Debrid.connected(a)?.service == service
+        val sheet = a.sheet(name, "Find your API key at ${service.keyAt}. It stays on this device.")
+        val pad = a.dp(if (a.isTv) 32 else 20)
+        val box = a.textField(if (connected) "Paste a new API key" else "$name API key").apply {
             endIconMode = com.google.android.material.textfield.TextInputLayout.END_ICON_PASSWORD_TOGGLE
             setEndIconTintList(android.content.res.ColorStateList.valueOf(C.variant))
             editText!!.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
@@ -485,16 +500,17 @@ class SettingsPage(private val a: MainActivity) {
             addView(box)
             addView(LinearLayout(a).apply {
                 if (connected) addView(a.button("Remove key") {
-                    TorBox.setKey(a, null); torBoxPlan = null; askedPlan = false; sheet.dialog.dismiss(); a.say("TorBox removed"); refresh()
+                    Debrid.connect(a, service, null); debridPlan = null; askedPlan = false; sheet.dialog.dismiss(); a.say("$name removed"); refresh()
                 }, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = a.dp(10) })
                 addView(a.button("Save", primary = true) {
                     val key = box.editText!!.text.toString().trim()
                     if (key.isBlank()) return@button
                     sheet.dialog.dismiss()
-                    a.say("Checking your TorBox key…")
-                    a.load({ TorBox.check(key) }) { r ->
-                        r.onSuccess { TorBox.setKey(a, key); torBoxPlan = null; askedPlan = false; a.say("TorBox connected"); refresh() }
-                            .onFailure { a.say(if (it is HttpException && it.code in 401..403) "TorBox didn't accept that key." else "Couldn't reach TorBox. Try again.") }
+                    a.say("Checking your $name key…")
+                    a.load({ service.plan(key) }) { r ->
+                        r.onSuccess { Debrid.connect(a, service, key); debridPlan = it; askedPlan = true; a.say("$name connected"); refresh() }
+                            // A 401 or an error in the reply's own envelope is the key; anything else is the network.
+                            .onFailure { a.say(if (it is HttpException && it.code in 401..403 || it is IllegalStateException) "$name didn't accept that key." else "Couldn't reach $name. Try again.") }
                     }
                 }, LinearLayout.LayoutParams(0, -2, 1f))
             }, lp().apply { topMargin = a.dp(14) })

@@ -1,5 +1,6 @@
 package app.kino
 
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -46,9 +47,19 @@ class LogicTest {
 
         val files = listOf("""{"id":0,"short_name":"sample.mkv","size":5}""", """{"id":1,"short_name":"S01E01.mkv","size":900}""",
             """{"id":2,"short_name":"S01E02.mkv","size":800}""", """{"id":3,"short_name":"cover.jpg","size":9000}""").map(::JSONObject)
-        assertEquals(2, TorBox.pick(files, "s01e02.MKV", null)!!.optInt("id"))
-        assertEquals(1, TorBox.pick(files, null, 1)!!.optInt("id"))
-        assertEquals(1, TorBox.pick(files, "missing.mkv", null)!!.optInt("id")) // largest video, not the bigger jpg
+        assertEquals(2, Debrid.pick(files, "s01e02.MKV", null)!!.optInt("id"))
+        assertEquals(1, Debrid.pick(files, null, 1)!!.optInt("id"))
+        assertEquals(1, Debrid.pick(files, "missing.mkv", null)!!.optInt("id")) // largest video, not the bigger jpg
+    }
+
+    @Test fun allDebridFiles() {
+        val tree = JSONArray("""[{"n":"Show S01","e":[{"n":"S01E01.mkv","s":900,"l":"https://ad/1"},{"n":"Extras","e":[{"n":"sample.mkv","s":5,"l":"https://ad/2"}]}]},{"n":"S01E02.mkv","s":800,"l":"https://ad/3"}]""")
+        val files = Debrid.flatten(tree)
+        assertEquals(listOf("S01E01.mkv", "sample.mkv", "S01E02.mkv"), files.map { it.getString("short_name") })
+        assertEquals(listOf(0, 1, 2), files.map { it.getInt("id") })
+        assertEquals("https://ad/3", Debrid.pick(files, "s01e02.mkv", null)!!.getString("link"))
+        assertEquals("https://ad/2", Debrid.pick(files, null, 1)!!.getString("link"))
+        assertFalse(Debrid.file(0, "a.mkv", 1).has("link")) // no link given, none kept
     }
 
     @Test fun ranking() {
