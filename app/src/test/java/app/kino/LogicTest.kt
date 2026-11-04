@@ -40,6 +40,21 @@ class LogicTest {
         assertEquals(2, p.season); assertEquals(50L, p.position); assertEquals("X", p.name)
     }
 
+    @Test fun seriesResumeTarget() {
+        val first = Video("s:1:1", "First", 1, 1, null, null)
+        val second = Video("s:1:2", "Second", 1, 2, null, null)
+        val nextSeason = Video("s:2:1", "Next season", 2, 1, null, null)
+        val special = Video("s:0:1", "Special", 0, 1, null, null)
+        val videos = listOf(nextSeason, special, second, first)
+        fun progress(v: Video, position: Long) = Progress("s", "series", v.id, v.season, v.episode, position, 100, 1)
+        assertEquals(first, seriesTarget(videos, progress(first, 50)))
+        assertEquals(second, seriesTarget(videos, progress(first, 95)))
+        assertEquals(nextSeason, seriesTarget(videos, progress(second, 95)))
+        assertEquals(nextSeason, seriesTarget(videos, progress(nextSeason, 95)))
+        assertEquals(null, seriesTarget(videos, null))
+        assertEquals(null, seriesTarget(videos, progress(special, 95)))
+    }
+
     @Test fun torrents() {
         val t = Stream.from("C", JSONObject("""{"name":"C","infoHash":"ABC","fileIdx":2,"behaviorHints":{"filename":"S01E02.mkv"}}"""))!!
         assertEquals("abc", t.hash); assertEquals(2, t.fileIdx); assertEquals("S01E02.mkv", t.filename)

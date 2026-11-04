@@ -47,7 +47,7 @@ object Net {
             c.connectTimeout = 10_000
             c.readTimeout = 20_000
             c.requestMethod = method
-            headers.forEach(c::setRequestProperty)
+            for ((name, value) in headers) c.setRequestProperty(name, value)
             if (body != null) {
                 c.doOutput = true
                 c.setRequestProperty("Content-Type", type)

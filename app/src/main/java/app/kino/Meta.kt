@@ -184,3 +184,12 @@ fun pickSubtitles(all: List<Subtitle>, langs: List<String>): List<Subtitle> {
     val mine = langs.flatMap { l -> unique.filter { langCode(it.lang) == l }.take(4) }
     return mine.ifEmpty { unique.take(10) }
 }
+
+/** The latest episode in progress, or its successor after completion; keep the finale after finishing a show. */
+fun seriesTarget(videos: List<Video>, last: Progress?): Video? {
+    if (last == null) return null
+    val ordered = videos.filter { it.id.isNotBlank() && it.season > 0 }.sortedWith(compareBy({ it.season }, { it.episode }))
+    val i = ordered.indexOfFirst { it.id == last.videoId || (it.season == last.season && it.episode == last.episode) }
+    if (i < 0) return null
+    return if (last.finished) ordered.getOrNull(i + 1) ?: ordered[i] else ordered[i]
+}

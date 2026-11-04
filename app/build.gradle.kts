@@ -14,7 +14,7 @@ android {
         minSdk = 23
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1"
+        versionName = "0.1.0"
         // FFmpeg is native code; ARM covers nearly every TV box and phone.
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
     }

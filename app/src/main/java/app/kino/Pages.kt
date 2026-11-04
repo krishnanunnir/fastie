@@ -228,7 +228,13 @@ class SearchPage(private val a: MainActivity) {
 
 class LibraryPage(private val a: MainActivity) {
     val view = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+    private val content = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
     private val grid = RecyclerView(a)
+    private val header = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+        override fun getItemCount() = 1
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = object : RecyclerView.ViewHolder(content) {}
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {}
+    }
     private val count = a.text(T.META, C.variant)
     private val host = object : PosterHost { override fun open(item: Item, progress: Progress?) = openItem(a, item, null) }
     // Downloads, above the saved titles: one row each with its progress, updated every second while any is going.
@@ -255,17 +261,37 @@ class LibraryPage(private val a: MainActivity) {
     }
 
     init {
-        val s = a.side()
-        view.addView(a.text(T.DISPLAY, s = "My List"), lp().apply { setMargins(s, a.dp(if (a.isTv) 32 else 16), s, 0) })
-        view.addView(count, lp().apply { setMargins(s, a.dp(4), s, a.dp(12)) })
-        view.addView(downloads, lp(if (a.isTv) a.dp(640) else -1, -2).apply { setMargins(s, 0, s, a.dp(12)) })
-        view.addView(empty, lp(-1, 0).apply { weight = 1f })
+        content.layoutParams = RecyclerView.LayoutParams(-1, -2)
+        val s = a.dp(6)
+        content.addView(a.text(T.DISPLAY, s = "My List"), lp().apply { setMargins(s, a.dp(if (a.isTv) 32 else 16), s, 0) })
+        content.addView(count, lp().apply { setMargins(s, a.dp(4), s, a.dp(12)) })
+        content.addView(downloads, lp(-1, -2).apply { setMargins(s, 0, s, a.dp(12)) })
+        content.addView(empty, lp())
         val cell = a.posterWidth() + a.dp(if (a.isTv) 14 else 8)
-        val available = a.resources.displayMetrics.widthPixels - 2 * s
-        grid.layoutManager = GridLayoutManager(a, (available / cell).coerceAtLeast(3))
+        val available = a.resources.displayMetrics.widthPixels - 2 * a.side()
+        val columns = (available / cell).coerceAtLeast(3)
+        grid.layoutManager = GridLayoutManager(a, columns).apply {
+            spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+                override fun getSpanSize(position: Int) = if (position == 0) spanCount else 1
+            }
+        }
         grid.clipToPadding = false
-        grid.setPadding(s - a.dp(6), 0, s - a.dp(6), a.dp(136))
-        view.addView(grid, lp(-1, 0).apply { weight = 1f })
+        grid.setPadding(a.side() - a.dp(6), 0, a.side() - a.dp(6), a.dp(136))
+        // MainActivity handles rotation without recreating its pages. Use the measured viewport,
+        // rather than the display width from when My List was first opened.
+        grid.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+            if (right - left != oldRight - oldLeft) {
+                val width = (right - left - 2 * a.side()).coerceAtLeast(0)
+                val layout = grid.layoutManager as GridLayoutManager
+                val spans = (width / cell).coerceAtLeast(3)
+                if (layout.spanCount != spans) layout.spanCount = spans
+                val rowWidth = width.coerceAtMost(a.dp(760))
+                if (downloads.layoutParams.width != rowWidth) {
+                    downloads.layoutParams = (downloads.layoutParams as LinearLayout.LayoutParams).apply { this.width = rowWidth }
+                }
+            }
+        }
+        view.addView(grid, lp(-1, -1))
         // Created after the window's insets arrived, so it starts from what Main measured.
         view.setPadding(0, a.topInset, 0, 0)
         view.setOnApplyWindowInsetsListener { v, insets ->
@@ -276,13 +302,12 @@ class LibraryPage(private val a: MainActivity) {
 
     fun refresh() {
         val items = Store.library(a)
-        grid.adapter = PosterAdapter(items, host, fill = true)
+        grid.adapter = androidx.recyclerview.widget.ConcatAdapter(header, PosterAdapter(items, host, fill = true))
         showDownloads()
         empty.visibility = if (items.isEmpty() && shown.isEmpty()) View.VISIBLE else View.GONE
-        grid.visibility = if (items.isEmpty()) View.GONE else View.VISIBLE
         count.text = if (items.isEmpty()) "" else "${items.size} ${if (items.size == 1) "title" else "titles"}"
         count.visibility = if (items.isEmpty()) View.GONE else View.VISIBLE
-        grid.isFocusable = items.isNotEmpty() // an empty grid would swallow D-pad focus invisibly
+        grid.isFocusable = items.isNotEmpty() || shown.isNotEmpty()
     }
 
     private fun showDownloads() {
@@ -291,19 +316,49 @@ class LibraryPage(private val a: MainActivity) {
         if (list.map { it.id to it.status } != shown.map { it.id to it.status }) {
             downloads.removeAllViews(); rows.clear()
             if (list.isNotEmpty()) {
-                downloads.addView(a.groupTitle("Downloads").apply { setPadding(a.dp(4), a.dp(4), 0, a.dp(10)) })
-                downloads.addView(a.group().apply {
-                    list.forEach { d ->
-                        val bar = a.progressLine().apply { visibility = if (d.running) View.VISIBLE else View.GONE }
-                        val row = groupRow(d.label, "", below = bar) { downloadSheet(d) }
-                        rows[d.id] = ((row.getChildAt(0) as LinearLayout).getChildAt(1) as TextView) to bar
+                downloads.addView(a.sectionTitle("Downloads"))
+                list.forEach { d ->
+                    val row = LinearLayout(a).apply {
+                        gravity = Gravity.CENTER_VERTICAL
+                        setPadding(a.dp(10), a.dp(10), a.dp(10), a.dp(10))
+                        background = rounded(C.container, a.dp(Shape.M).toFloat())
                     }
-                })
+                    val art = FrameLayout(a).apply {
+                        background = rounded(C.containerHigh, a.dp(Shape.M).toFloat())
+                        outlineProvider = MorphOutline(a.dp(Shape.M).toFloat()); clipToOutline = true
+                        addView(ImageView(a).apply {
+                            scaleType = ImageView.ScaleType.CENTER_CROP
+                            val episode = d.item.videos.firstOrNull { it.id == d.videoId }
+                            Images.load(this, episode?.thumbnail ?: d.item.backgroundOrHub ?: d.item.posterOrHub, a.dp(160))
+                        }, FrameLayout.LayoutParams(-1, -1))
+                    }
+                    row.addView(art, lp(a.dp(if (a.isTv) 160 else 112), a.dp(if (a.isTv) 90 else 72)))
+                    val sub = a.text(T.META, C.variant, lines = 2)
+                    val bar = a.progressLine().apply { visibility = if (d.running) View.VISIBLE else View.GONE }
+                    row.addView(LinearLayout(a).apply {
+                        orientation = LinearLayout.VERTICAL
+                        setPadding(a.dp(14), 0, a.dp(12), 0)
+                        addView(a.text(T.LABEL, lines = 2, s = d.item.name))
+                        if (d.season >= 0) addView(a.text(T.META, C.variant, s = "Season ${d.season} · Episode ${d.episode}"),
+                            lp().apply { topMargin = a.dp(4) })
+                        addView(sub, lp().apply { topMargin = a.dp(6) })
+                        addView(bar, lp(-1, a.dp(4)).apply { topMargin = a.dp(8) })
+                    }, lp(0, -2).apply { weight = 1f })
+                    if (d.finished) row.addView(a.button(if (a.resources.configuration.screenWidthDp >= 600 || a.isTv) "Play" else "", R.drawable.ic_play) { a.playDownload(d) }.apply {
+                        contentDescription = "Play ${d.label} offline"
+                        if (text.isEmpty()) { setPadding(a.dp(12), a.dp(10), a.dp(12), a.dp(10)); iconPadding = 0 }
+                    }, lp(-2, -2))
+                    row.addView(a.button("⋮") { downloadSheet(d) }.apply { contentDescription = "Options for ${d.label}"; setPadding(0, 0, 0, 0) },
+                        lp(a.dp(48), -2).apply { marginStart = a.dp(8) })
+                    downloads.addView(row, lp(-1, -2).apply { bottomMargin = a.dp(10) })
+                    rows[d.id] = sub to bar
+                }
             }
         }
         shown = list
         list.forEach { d -> rows[d.id]?.let { (sub, bar) -> sub.text = status(d); bar.fraction = d.fraction } }
         downloads.visibility = if (list.isEmpty()) View.GONE else View.VISIBLE
+        empty.visibility = if (list.isEmpty() && Store.library(a).isEmpty()) View.VISIBLE else View.GONE
         view.removeCallbacks(tick)
         if (list.any { it.running }) view.postDelayed(tick, 1000)
     }

@@ -136,7 +136,14 @@ class PlayerActivity : Activity() {
     }
 
     // Your languages, the phone's then English: audio prefers them, and subtitles come in them.
-    private val languages by lazy { (resources.configuration.locales.let { l -> List(l.size()) { l[it].language } } + "en").distinct() }
+    private val languages by lazy {
+        val config = resources.configuration
+        @Suppress("DEPRECATION")
+        val preferred = if (android.os.Build.VERSION.SDK_INT >= 24) {
+            config.locales.let { l -> List(l.size()) { l[it].language } }
+        } else listOf(config.locale.language)
+        (preferred + "en").distinct()
+    }
 
     // Subtitles from every subtitle addon, asked for as the player opens so they're usually in by the time the link is.
     private var subtitlesAhead: java.util.concurrent.Future<List<Subtitle>>? = null

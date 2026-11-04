@@ -27,6 +27,7 @@ class DetailsActivity : Activity() {
     private val title by lazy { text(T.DISPLAY, lines = 2) }
     private val meta by lazy { text(T.META, C.alpha(C.onSurface, 0.72f), lines = 2) }
     private val desc by lazy { text(T.BODY, C.alpha(C.onSurface, 0.82f), lines = if (isTv) 3 else 8) }
+    private val resumeInfo by lazy { text(T.BODY, C.variant, lines = 2) }
     private val seasons by lazy { LinearLayout(this) }
     // Every stream for Play's target, best for this device first, found as soon as the page opens.
     private val streamSlot by lazy { LinearLayout(this).apply { orientation = LinearLayout.VERTICAL } }
@@ -72,6 +73,7 @@ class DetailsActivity : Activity() {
         buttons.addView(list, if (isTv) lp(-2, -2).apply { marginEnd = dp(12) } else lp(0, -2).apply { weight = 1f; marginEnd = dp(10) })
         buttons.addView(save, lp(if (isTv) -2 else dp(56), -2))
         header.addView(buttons, lp().apply { topMargin = dp(22) })
+        header.addView(resumeInfo, lp().apply { topMargin = dp(12) })
         header.addView(streamSlot, lp(if (isTv) dp(640) else -1, -2))
         header.addView(HorizontalScrollView(this).apply {
             isHorizontalScrollBarEnabled = false
@@ -158,11 +160,7 @@ class DetailsActivity : Activity() {
 
     /** The episode to resume, or the one after the last finished one. Null before anything was watched. */
     private fun resumeTarget(): Video? {
-        val last = Store.progress(this).filter { it.contentId == item.id }.maxByOrNull { it.lastWatched } ?: return null
-        val vids = item.videos.filter { it.season > 0 }
-        val i = vids.indexOfFirst { it.id == last.videoId || (it.season == last.season && it.episode == last.episode) }
-        if (i < 0) return null
-        return if (last.finished) vids.getOrNull(i + 1) else vids[i]
+        return seriesTarget(item.videos, Store.progress(this).filter { it.contentId == item.id }.maxByOrNull { it.lastWatched })
     }
 
     private fun updatePlay() {
@@ -170,9 +168,14 @@ class DetailsActivity : Activity() {
         if (item.isSeries && item.videos.isNotEmpty()) {
             val target = resumeTarget()
             val v = target ?: item.videos.firstOrNull { it.season > 0 } ?: item.videos.first()
-            val started = target != null && (Store.progressFor(this, v.id)?.position ?: 0) > 0
+            val started = Store.progressFor(this, v.id)?.let { it.position > 0 && !it.finished } == true
             play.text = "${if (started) "Resume" else "Play"} S${v.season}:E${v.episode}"
+            val p = Store.progressFor(this, v.id)?.takeIf { !it.finished && it.position > 0 }
+            val left = p?.takeIf { it.duration > it.position }?.let { "${((it.duration - it.position + 59999) / 60000)} min left" }
+            resumeInfo.text = listOfNotNull(v.title.ifBlank { "Episode ${v.episode}" }, left).joinToString("  ·  ")
+            resumeInfo.visibility = View.VISIBLE
         } else {
+            resumeInfo.visibility = View.GONE
             val p = Store.progressFor(this, item.id)
             play.text = if (p != null && p.position > 0 && !p.finished) "Resume" else "Play"
         }
@@ -201,6 +204,13 @@ class DetailsActivity : Activity() {
     /** Lists every playable stream for Play's target under the buttons, best first; tapping one plays it. */
     private fun findStreams() {
         val v = target() ?: return
+        if (item.isSeries) {
+            streamSlot.removeAllViews()
+            streamSlot.addView(button("Choose stream for S${v.season}:E${v.episode}") {
+                chooseStream(item, type(), v.id, v.season, v.episode)
+            }, lp(-2, -2).apply { topMargin = dp(12) })
+            return
+        }
         if (streamsFor == v.id) return
         streamsFor = v.id; streams = emptyList(); showAll = false
         renderStreams("Finding streams…")
@@ -239,6 +249,14 @@ class DetailsActivity : Activity() {
         download(item, s, type(), v.id, v.season, v.episode)
     }
 
+    private fun episodeOptions(v: Video) {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("S${v.season}:E${v.episode} · ${v.title}")
+            .setItems(arrayOf("Choose stream", "Download episode")) { _, which ->
+                if (which == 0) chooseStream(item, "series", v.id, v.season, v.episode) else download(v)
+            }.show()
+    }
+
     private fun toggleList() {
         val on = !Store.inLibrary(this, item.id)
         Store.setInLibrary(this, item, on)
@@ -264,6 +282,7 @@ class DetailsActivity : Activity() {
                 background = StateListDrawable().apply {
                     addState(intArrayOf(android.R.attr.state_focused), rounded(C.containerHigh, r, dp(2), C.onSurface))
                     addState(intArrayOf(android.R.attr.state_pressed), rounded(C.containerHigh, r))
+                    addState(intArrayOf(android.R.attr.state_selected), rounded(C.container, r))
                     addState(intArrayOf(), rounded(Color.TRANSPARENT, r))
                 }
                 layoutParams = RecyclerView.LayoutParams(if (isTv) (resources.displayMetrics.widthPixels * 0.62f).toInt() else -1, -2)
@@ -280,8 +299,10 @@ class DetailsActivity : Activity() {
             row.addView(thumb, lp(tw, tw * 9 / 16))
             val texts = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), 0, 0, 0) }
             texts.addView(text(T.LABEL, lines = 1))
+            texts.addView(text(T.META, C.variant, lines = 1))
             texts.addView(text(T.META, C.variant, lines = if (isTv) 2 else 3).apply { setPadding(0, dp(6), 0, 0) })
             row.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
+            row.addView(button("⋮") {}.apply { contentDescription = "Episode options"; setPadding(0, 0, 0, 0) }, lp(dp(48), -2))
             return object : RecyclerView.ViewHolder(row) {}
         }
 
@@ -293,14 +314,26 @@ class DetailsActivity : Activity() {
             val texts = row.getChildAt(1) as LinearLayout
             Images.load(thumb.getChildAt(0) as ImageView, v.thumbnail, dp(176))
             (texts.getChildAt(0) as TextView).text = "${v.episode}.  ${v.title.ifBlank { "Episode ${v.episode}" }}"
-            (texts.getChildAt(1) as TextView).text = v.overview
+            (texts.getChildAt(2) as TextView).text = v.overview
             val p = Store.progressFor(this@DetailsActivity, v.id)
+            val current = target()?.id == v.id
+            row.isSelected = current
+            (texts.getChildAt(1) as TextView).apply {
+                text = when {
+                    p?.finished == true -> "Watched"
+                    p != null && p.position > 0 && p.duration > p.position -> "Resume · ${(p.duration - p.position + 59999) / 60000} min left"
+                    current -> "Up next"
+                    else -> ""
+                }
+                visibility = if (text.isEmpty()) View.GONE else View.VISIBLE
+            }
             val bar = thumb.getChildAt(1) as LinearProgressIndicator
             bar.visibility = if (p != null && p.position > 0) View.VISIBLE else View.GONE
             if (p != null) bar.fraction = p.fraction.coerceAtLeast(0.04f)
             row.contentDescription = "Episode ${v.episode}, ${v.title}"
             row.setOnClickListener { playEpisode(v) }
-            row.setOnLongClickListener { download(v); true } // a long press downloads the episode
+            (row.getChildAt(2) as MaterialButton).setOnClickListener { episodeOptions(v) }
+            row.setOnLongClickListener { episodeOptions(v); true }
         }
     }
 }

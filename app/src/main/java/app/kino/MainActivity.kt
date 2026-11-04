@@ -206,8 +206,9 @@ class MainActivity : Activity(), PosterHost {
         val season = progress.season ?: -1
         val episode = progress.episode ?: -1
         val what = if (progress.season != null) "${item.name}  ·  S${progress.season}:E${progress.episode}" else item.name
-        MaterialAlertDialogBuilder(this).setTitle(what).setItems(arrayOf("Choose another stream", "Start from the beginning")) { _, i ->
+        MaterialAlertDialogBuilder(this).setTitle(what).setItems(arrayOf("Choose another stream", "Start from the beginning", if (item.isSeries) "View episodes" else "View details")) { _, i ->
             when (i) {
+                2 -> openItem(this, item, null)
                 0 -> chooseStream(item, progress.type, progress.videoId, season, episode)
                 1 -> {
                     Store.saveProgress(this, Progress(progress.contentId, progress.type, progress.videoId, progress.season, progress.episode,

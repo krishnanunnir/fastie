@@ -174,10 +174,10 @@ All pages use the same system. Corners come from `Shape` (6dp for buttons, rows,
 - **Details:** the same hero as Home (a full-screen backdrop on TV, the logo sized to its own aspect, the ★ meta line, a 3-line synopsis), then Play and My List, then the season chips.
   - Season chips are pills: a hairline outline at rest, white 18% when selected, white when focused.
   - Episode rows show a 16:9 thumbnail (8dp corners) with a 3dp red progress line. Under focus they get a raised fill and a 2dp white ring, and the text stays white.
-- **Streams:** there is no stream page. Details lists the streams for Play's target under the buttons, best for the device first, five at a time with "Show all", in list rows that invert to white under focus. Episodes and Continue Watching play the best stream directly; the player finds it behind the poster.
+- **Streams:** movies list streams under the buttons, best for the device first, five at a time with "Show all". Series show the resume episode title and time remaining, a compact "Choose stream" control, then seasons and episodes. The current episode has a raised fill and a resume/up-next label; each episode has an options menu for streams and downloads. Episodes and Continue Watching play the best stream directly; Continue Watching’s menu also opens episodes/details.
 - **Settings:** section titles over list rows, in a column capped at 640dp.
 - **Search:** a pill field that gets a 2dp white stroke under focus; before typing, recent searches and what's popular on Home; results in one poster grid with All / Movies / Series filters, and pulsing poster placeholders while addons answer.
-- **My List:** a grid of posters that scale to 1.06 under focus.
+- **My List:** downloads and saved posters share one scrolling page. Download rows fit the current viewport up to 760dp and reflow on rotation, with artwork, separate series/episode text, status/progress, direct offline Play, and an options menu for deletion/cancellation. Saved posters scale to 1.06 under focus.
 - **Sign-in:** the device code sits in a container box with a hairline outline, not a white box (white means focus). Inputs match the search field.
 - **Player:** the scrubber and played bar are red, because they show progress.
 
