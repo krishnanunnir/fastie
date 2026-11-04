@@ -1,6 +1,7 @@
 package app.kino
 
 import com.google.android.material.snackbar.Snackbar
+import android.app.DownloadManager
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
@@ -230,6 +231,11 @@ class LibraryPage(private val a: MainActivity) {
     private val grid = RecyclerView(a)
     private val count = a.text(T.META, C.variant)
     private val host = object : PosterHost { override fun open(item: Item, progress: Progress?) = openItem(a, item, null) }
+    // Downloads, above the saved titles: one row each with its progress, updated every second while any is going.
+    private val downloads = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+    private var shown = emptyList<Download>()
+    private val rows = mutableMapOf<Long, Pair<TextView, com.google.android.material.progressindicator.LinearProgressIndicator>>()
+    private val tick = Runnable { showDownloads() }
 
     /** Nothing saved yet: a bookmark in a circle, a line on how to save, and a way back to browsing. */
     private val empty = LinearLayout(a).apply {
@@ -252,6 +258,7 @@ class LibraryPage(private val a: MainActivity) {
         val s = a.side()
         view.addView(a.text(T.DISPLAY, s = "My List"), lp().apply { setMargins(s, a.dp(if (a.isTv) 32 else 16), s, 0) })
         view.addView(count, lp().apply { setMargins(s, a.dp(4), s, a.dp(12)) })
+        view.addView(downloads, lp(if (a.isTv) a.dp(640) else -1, -2).apply { setMargins(s, 0, s, a.dp(12)) })
         view.addView(empty, lp(-1, 0).apply { weight = 1f })
         val cell = a.posterWidth() + a.dp(if (a.isTv) 14 else 8)
         val available = a.resources.displayMetrics.widthPixels - 2 * s
@@ -270,11 +277,57 @@ class LibraryPage(private val a: MainActivity) {
     fun refresh() {
         val items = Store.library(a)
         grid.adapter = PosterAdapter(items, host, fill = true)
-        empty.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+        showDownloads()
+        empty.visibility = if (items.isEmpty() && shown.isEmpty()) View.VISIBLE else View.GONE
         grid.visibility = if (items.isEmpty()) View.GONE else View.VISIBLE
         count.text = if (items.isEmpty()) "" else "${items.size} ${if (items.size == 1) "title" else "titles"}"
         count.visibility = if (items.isEmpty()) View.GONE else View.VISIBLE
         grid.isFocusable = items.isNotEmpty() // an empty grid would swallow D-pad focus invisibly
+    }
+
+    private fun showDownloads() {
+        val list = Downloads.list(a)
+        // Rebuilt only when a download comes, goes or finishes, so D-pad focus stays put while the numbers move.
+        if (list.map { it.id to it.status } != shown.map { it.id to it.status }) {
+            downloads.removeAllViews(); rows.clear()
+            if (list.isNotEmpty()) {
+                downloads.addView(a.groupTitle("Downloads").apply { setPadding(a.dp(4), a.dp(4), 0, a.dp(10)) })
+                downloads.addView(a.group().apply {
+                    list.forEach { d ->
+                        val bar = a.progressLine().apply { visibility = if (d.running) View.VISIBLE else View.GONE }
+                        val row = groupRow(d.label, "", below = bar) { downloadSheet(d) }
+                        rows[d.id] = ((row.getChildAt(0) as LinearLayout).getChildAt(1) as TextView) to bar
+                    }
+                })
+            }
+        }
+        shown = list
+        list.forEach { d -> rows[d.id]?.let { (sub, bar) -> sub.text = status(d); bar.fraction = d.fraction } }
+        downloads.visibility = if (list.isEmpty()) View.GONE else View.VISIBLE
+        view.removeCallbacks(tick)
+        if (list.any { it.running }) view.postDelayed(tick, 1000)
+    }
+
+    private fun status(d: Download): String {
+        val size = { b: Long -> android.text.format.Formatter.formatShortFileSize(a, b) }
+        return when (d.status) {
+            DownloadManager.STATUS_SUCCESSFUL -> "Downloaded  ·  ${size(d.total)}"
+            DownloadManager.STATUS_FAILED -> "Download failed. Delete it and try another stream."
+            DownloadManager.STATUS_PAUSED -> "Waiting for the network  ·  ${size(d.done)}"
+            else -> if (d.total <= 0) "Starting…" else "Downloading ${(d.fraction * 100).toInt()}%  ·  ${size(d.done)} of ${size(d.total)}"
+        }
+    }
+
+    /** Play (once it's finished) or delete one download. */
+    private fun downloadSheet(d: Download) {
+        val shell = a.sheet(d.label, status(d))
+        val pad = a.dp(if (a.isTv) 32 else 20)
+        if (d.finished) shell.body.addView(a.button("Play", R.drawable.ic_play, primary = true) { shell.dialog.dismiss(); a.playDownload(d) },
+            lp().apply { setMargins(pad, 0, pad, a.dp(10)) })
+        shell.body.addView(a.button(if (d.finished) "Delete download" else "Cancel download") {
+            shell.dialog.dismiss(); Downloads.delete(a, d.id); refresh()
+        }, lp().apply { setMargins(pad, 0, pad, 0) })
+        shell.dialog.show()
     }
 }
 

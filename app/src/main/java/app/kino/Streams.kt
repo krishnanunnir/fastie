@@ -96,12 +96,13 @@ fun Activity.playBest(item: Item, type: String, id: String, season: Int, episode
 
 /**
  * A sheet of every stream for one movie or episode, best first, in the same cards as Details. It opens at once with a
- * loading line and fills in when the addons answer; the pick replaces the remembered link and plays.
+ * loading line and fills in when the addons answer; the pick replaces the remembered link and plays, or goes to [pick].
  */
-fun Activity.chooseStream(item: Item, type: String, id: String, season: Int, episode: Int) {
+fun Activity.chooseStream(item: Item, type: String, id: String, season: Int, episode: Int,
+                          title: String = "Choose a stream", pick: ((Stream) -> Unit)? = null) {
     val h = resources.displayMetrics.heightPixels
     val pad = dp(if (isTv) 32 else 16)
-    val shell = sheet("Choose a stream", listOfNotNull(item.name, if (season >= 0) "S$season:E$episode" else null).joinToString("  ·  "))
+    val shell = sheet(title, listOfNotNull(item.name, if (season >= 0) "S$season:E$episode" else null).joinToString("  ·  "))
     val sheet = shell.dialog
     val sub = shell.sub
     val loading = progressLine().apply { isIndeterminate = true }
@@ -128,6 +129,7 @@ fun Activity.chooseStream(item: Item, type: String, id: String, season: Int, epi
                 val s = found.streams[position]
                 box.addView(streamCard(s, best = position == 0) {
                     sheet.dismiss()
+                    if (pick != null) return@streamCard pick(s)
                     Store.saveLink(this@chooseStream, id, null)
                     playStream(item, s, null, type, id, season, episode)
                 }, FrameLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })

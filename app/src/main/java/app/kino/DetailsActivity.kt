@@ -63,8 +63,14 @@ class DetailsActivity : Activity() {
         val buttons = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
         play = button("Play", R.drawable.ic_play, primary = true) { play() }
         list = button("My List", R.drawable.ic_add) { toggleList() }
+        // Just the icon on phones, where Play and My List already share the width.
+        val save = button(if (isTv) "Download" else "", R.drawable.ic_download) { target()?.let(::download) }.apply {
+            contentDescription = "Download"
+            if (!isTv) { setPadding(0, dp(10), 0, dp(10)); iconPadding = 0; iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START }
+        }
         buttons.addView(play, if (isTv) lp(-2, -2).apply { marginEnd = dp(12) } else lp(0, -2).apply { weight = 1f; marginEnd = dp(10) })
-        buttons.addView(list, if (isTv) lp(-2, -2) else lp(0, -2).apply { weight = 1f })
+        buttons.addView(list, if (isTv) lp(-2, -2).apply { marginEnd = dp(12) } else lp(0, -2).apply { weight = 1f; marginEnd = dp(10) })
+        buttons.addView(save, lp(if (isTv) -2 else dp(56), -2))
         header.addView(buttons, lp().apply { topMargin = dp(22) })
         header.addView(streamSlot, lp(if (isTv) dp(640) else -1, -2))
         header.addView(HorizontalScrollView(this).apply {
@@ -228,6 +234,11 @@ class DetailsActivity : Activity() {
     /** An episode plays its best stream straight away; the player finds it behind the poster. */
     private fun playEpisode(v: Video) = playBest(item, "series", v.id, v.season, v.episode)
 
+    /** Picks a stream for [v], best first, and saves it to the device. */
+    private fun download(v: Video) = chooseStream(item, type(), v.id, v.season, v.episode, "Download a stream") { s ->
+        download(item, s, type(), v.id, v.season, v.episode)
+    }
+
     private fun toggleList() {
         val on = !Store.inLibrary(this, item.id)
         Store.setInLibrary(this, item, on)
@@ -289,6 +300,7 @@ class DetailsActivity : Activity() {
             if (p != null) bar.fraction = p.fraction.coerceAtLeast(0.04f)
             row.contentDescription = "Episode ${v.episode}, ${v.title}"
             row.setOnClickListener { playEpisode(v) }
+            row.setOnLongClickListener { download(v); true } // a long press downloads the episode
         }
     }
 }
