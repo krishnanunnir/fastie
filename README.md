@@ -1,10 +1,12 @@
-# Kino
-
-<p>
-  <img src="assets/branding/kino-logo.svg" alt="Kino logo" width="320">
+<p align="center">
+  <img src="assets/branding/kino-logo.svg" alt="Kino" width="280">
 </p>
 
 A very light way to watch what your Stremio-style addons provide, on Android TV and phones. One APK of about 4 MB.
+
+<p align="center">
+  <img src="docs/shots/tablet-home.png" alt="Kino Home on a Lenovo Legion tablet, with featured artwork, Continue Watching and movie recommendations" width="400">
+</p>
 
 - **Netflix-style browsing.** As you move around, the title you're on fills the screen, with rows of posters below.
 - **Works with your addons.** Add any Stremio addon link, or sign in to your **Nuvio** account to bring your addons, My List and Continue Watching with you.
@@ -26,7 +28,7 @@ Kino hosts no content and isn't affiliated with Nuvio or Stremio. A fresh instal
   </tr>
 </table>
 
-Captured from the running Android app: Home and series on a phone emulator, Downloads on a Lenovo Legion tablet. Title artwork belongs to its owners.
+Captured from the running Android app: the opening Home screenshot and Downloads on a Lenovo Legion tablet; the gallery's Home and series screens on a phone emulator. Title artwork belongs to its owners.
 
 ## Install
 
