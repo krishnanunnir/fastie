@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Material 3 roles mapped onto Spotlight (C in Ui.kt): white is primary and focus, amber the one accent. -->
+    <!-- Material 3 roles mapped onto Spotlight (C in Ui.kt): white is primary and focus, red the one accent. -->
     <style name="Kino" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:windowBackground">@color/ground</item>
         <item name="android:colorBackground">@color/ground</item>
         <item name="colorPrimary">@color/white</item>
         <item name="colorOnPrimary">@color/ground</item>
-        <item name="colorSecondary">@color/amber</item>
+        <item name="colorSecondary">@color/accent</item>
         <item name="colorOnSecondary">@color/ground</item>
         <item name="colorSurface">@color/ground</item>
         <item name="colorOnSurface">@color/white</item>

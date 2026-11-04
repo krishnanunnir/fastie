@@ -118,7 +118,7 @@ class MainActivity : Activity(), PosterHost {
         tag = i
     }
 
-    /** TV: a text tab (Search is its icon) with an amber underline on the current page. */
+    /** TV: a text tab (Search is its icon) with a red underline on the current page. */
     private fun navItem(i: Int) = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         gravity = Gravity.CENTER_HORIZONTAL
@@ -132,7 +132,7 @@ class MainActivity : Activity(), PosterHost {
         }, lp(-2, -2))
         setPadding(dp(16), dp(9), dp(16), dp(5))
         background = rounded(Color.TRANSPARENT, dp(20).toFloat())
-        addView(View(context).apply { background = rounded(C.amber, dp(1).toFloat()) }, lp(-1, dp(2)).apply { topMargin = dp(4) })
+        addView(View(context).apply { background = rounded(C.accent, dp(1).toFloat()) }, lp(-1, dp(2)).apply { topMargin = dp(4) })
         setOnFocusChangeListener { v, _ -> tint(v, i) }
         setOnClickListener { show(i) }
         nav += this
@@ -153,7 +153,7 @@ class MainActivity : Activity(), PosterHost {
         }
         val ink = when {
             v.isFocused -> C.onPrimary
-            active -> if (isTv) C.onSurface else C.amber
+            active -> if (isTv) C.onSurface else C.accent
             else -> if (isTv) C.alpha(C.onSurface, 0.62f) else C.variant
         }
         (item.background as? android.graphics.drawable.GradientDrawable)?.setColor(if (v.isFocused) C.primary else Color.TRANSPARENT)

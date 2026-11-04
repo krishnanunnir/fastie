@@ -25,7 +25,7 @@ import androidx.recyclerview.widget.RecyclerView
 private fun MainActivity.side() = dp(if (isTv) 48 else 16)
 
 /**
- * Search: a pill field, then before you type your recent searches and what's popular on Home; while searching an amber
+ * Search: a pill field, then before you type your recent searches and what's popular on Home; while searching a red
  * line; then one poster grid merged across every addon that searches, with All / Movies / Series to narrow it.
  */
 class SearchPage(private val a: MainActivity) {

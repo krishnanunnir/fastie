@@ -1,7 +1,7 @@
 <!-- The Kino k (assets/branding/kino-icon.svg), centred in the adaptive icon's 66dp safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
     <group android:translateX="-21.87" android:translateY="4.05" android:scaleX="0.135" android:scaleY="0.135">
-        <path android:fillColor="#FFB627" android:fillType="evenOdd"
+        <path android:fillColor="#FF4D3D" android:fillType="evenOdd"
             android:pathData="M422 168H476Q518 168 518 210V334L585 274Q593 267 606 267H725Q744 267 738 286L616 418L738 550Q751 572 727 572H605Q592 572 582 561L518 500V530Q518 572 476 572H422Q380 572 380 530V210Q380 168 422 168ZM487 367Q478 362 478 375V468Q478 482 489 475L570 430Q582 423 570 416Z" />
     </group>
 </vector>

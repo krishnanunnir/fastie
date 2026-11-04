@@ -28,7 +28,7 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 
 /**
- * Spotlight colour roles: a true-black ground, white as the focus colour, and amber, the only accent,
+ * Spotlight colour roles: a true-black ground, white as the focus colour, and ember red, the only accent,
  * kept to progress, the wordmark and the current page. Role names follow Material so screens read the same.
  */
 object C {
@@ -48,7 +48,7 @@ object C {
     const val onSecondaryContainer = onSurface
     const val inverse = 0xFFF2F2F4.toInt()
     const val inverseOn = ground
-    const val amber = 0xFFFFB627.toInt()
+    const val accent = 0xFFFF4D3D.toInt()
     const val danger = 0xFFFF6B6B.toInt() // destructive actions only, such as Remove
 
     fun alpha(color: Int, a: Float) = (color and 0x00FFFFFF) or ((a * 255).toInt() shl 24)
@@ -232,14 +232,14 @@ fun Context.metaText(item: Item, size: Float): CharSequence = android.text.Spann
 
 fun Context.sectionTitle(s: String) = text(T.ROW, s = s).apply { setPadding(dp(4), dp(28), 0, dp(12)) }
 
-/** A 4dp progress line: white at 30% under an amber fill, rounded ends, no gap or stop dot. */
+/** A 4dp progress line: white at 30% under a red fill, rounded ends, no gap or stop dot. */
 fun Context.progressLine() = LinearProgressIndicator(this).apply {
     max = 1000
     trackThickness = dp(4)
     trackCornerRadius = dp(2)
     indicatorTrackGapSize = 0
     trackStopIndicatorSize = 0
-    setIndicatorColor(C.amber)
+    setIndicatorColor(C.accent)
     trackColor = C.alpha(C.onSurface, 0.3f)
 }
 
@@ -316,13 +316,11 @@ fun crossfade(layers: Pair<ImageView, ImageView>, url: String?, width: Int) {
 fun lp(w: Int = ViewGroup.LayoutParams.MATCH_PARENT, h: Int = ViewGroup.LayoutParams.WRAP_CONTENT) = LinearLayout.LayoutParams(w, h)
 
 
-/** The brand: the K alone on the TV tab bar, the full lockup (the k and "kino") on the phone's Home. */
+/** The brand: the K alone, on the TV tab bar and over the phone's Home. */
 fun Context.wordmark() = LinearLayout(this).apply {
     gravity = Gravity.CENTER_VERTICAL
     contentDescription = "Kino"
-    // TV: just the K beside the tabs, which name the pages already; phone: the full lockup over Home.
-    if (isTv) addView(ImageView(context).apply { setImageResource(R.drawable.kino_k) }, lp(dp(29), dp(32)))
-    else addView(ImageView(context).apply { setImageResource(R.drawable.kino_logo) }, lp(dp(94), dp(28)))
+    addView(ImageView(context).apply { setImageResource(R.drawable.kino_k) }, lp(dp(29), dp(32)))
 }
 
 /** A small rounded label: [solid] is white with ground ink (quality), otherwise a hairline outline (tags). */

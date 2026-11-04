@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ground">#0F0F11</color>
-    <color name="amber">#FFB627</color>
+    <color name="accent">#FF4D3D</color>
     <color name="white">#FFFFFF</color>
     <color name="variant">#A3A3AB</color>
     <color name="container_high">#222226</color>

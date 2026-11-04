@@ -1,7 +1,7 @@
 <!-- The Kino k on its own (assets/branding/kino-icon.svg), cropped to its ink: 364 × 404. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="27dp" android:height="30dp" android:viewportWidth="364" android:viewportHeight="404">
     <group android:translateX="-380" android:translateY="-168">
-        <path android:fillColor="#FFB627" android:fillType="evenOdd"
+        <path android:fillColor="#FF4D3D" android:fillType="evenOdd"
             android:pathData="M422 168H476Q518 168 518 210V334L585 274Q593 267 606 267H725Q744 267 738 286L616 418L738 550Q751 572 727 572H605Q592 572 582 561L518 500V530Q518 572 476 572H422Q380 572 380 530V210Q380 168 422 168ZM487 367Q478 362 478 375V468Q478 482 489 475L570 430Q582 423 570 416Z" />
     </group>
 </vector>

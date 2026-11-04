@@ -90,7 +90,7 @@ class PlayerActivity : Activity() {
             setBackgroundColor(android.graphics.Color.BLACK)
             // The scrubber takes the theme's primary, like every other progress indicator in Kino.
             findViewById<androidx.media3.ui.DefaultTimeBar>(androidx.media3.ui.R.id.exo_progress)?.apply {
-                setPlayedColor(C.amber); setScrubberColor(C.amber); setBufferedColor(C.alpha(C.onSurface, 0.4f))
+                setPlayedColor(C.accent); setScrubberColor(C.accent); setBufferedColor(C.alpha(C.onSurface, 0.4f))
             }
             // A white spinner whenever playback stalls to fill its buffer.
             setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
@@ -232,7 +232,7 @@ class PlayerActivity : Activity() {
 
     /**
      * Until the first frame draws: the backdrop, dimmed and fading in from the left, with the poster and then the title's
-     * logo (or name), the episode, where it resumes, an amber line and what the player is doing. Laid out for landscape,
+     * logo (or name), the episode, where it resumes, a red line and what the player is doing. Laid out for landscape,
      * which is how the player always runs.
      */
     private fun cover() = FrameLayout(this).apply {

@@ -22,7 +22,7 @@
   --variant: #A3A3AB;
   --outline: #3A3A42;
   --soft: #FFFFFF2E;
-  --amber: #FFB627;
+  --accent: #FF4D3D;
   --page: clamp(16px, 4vw, 64px);
   color-scheme: dark;
 }
@@ -30,7 +30,7 @@
 html { scroll-behavior: smooth; scrollbar-color: var(--outline) var(--ground); }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 body { margin: 0; background: var(--ground); color: var(--text); font: 400 18px/1.5 Roboto, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-::selection { background: var(--amber); color: var(--ground); }
+::selection { background: var(--accent); color: var(--ground); }
 img { display: block; max-width: 100%; height: auto; }
 a { color: inherit; text-underline-offset: 3px; }
 :focus-visible { outline: 2px solid var(--text); outline-offset: 4px; border-radius: 6px; }
@@ -67,7 +67,7 @@ header .btn { min-height: 40px; padding: 0 16px; font-size: 15px; }
 .track .n { font-weight: 900; font-size: 22px; line-height: 1.2; color: var(--outline); transition: color .3s; }
 .track .t { font-weight: 700; font-size: 19px; line-height: 1.3; color: var(--variant); transition: color .3s; }
 .track .d { grid-column: 2; font-size: 16px; line-height: 1.45; color: #FFFFFFB8; max-height: 0; overflow: hidden; opacity: 0; transition: max-height .45s cubic-bezier(.2,.8,.2,1), opacity .3s, margin .3s; }
-.track li.on .n { color: var(--amber); }
+.track li.on .n { color: var(--accent); }
 .track li.on .t { color: var(--text); }
 .track li.on .d { max-height: 5em; opacity: 1; margin-top: 4px; }
 .track button:focus-visible { outline-offset: 2px; }
@@ -86,7 +86,7 @@ header .btn { min-height: 40px; padding: 0 16px; font-size: 15px; }
   .tv { display: none; }
   .track { max-width: none; gap: 40px; margin-top: 56px; }
   .track button { cursor: default; padding: 0; }
-  .track .n { color: var(--amber); }
+  .track .n { color: var(--accent); }
   .track .t { color: var(--text); font-size: 22px; }
   .track .d { max-height: none; opacity: 1; margin-top: 6px; }
   .inline-shot { display: block; grid-column: 1 / -1; margin-bottom: 18px; border-radius: 8px; box-shadow: 0 0 0 6px var(--container); }
@@ -178,7 +178,7 @@ footer p:first-child { flex: 1 1 420px; }
           <li>
             <button type="button" data-step="2">
               <span class="n">3</span><span class="t">Play</span>
-              <img class="inline-shot" src="shots/tv-play-ui.jpg" alt="Kino's player with an amber progress bar, skip buttons, subtitles and settings" loading="lazy" width="1600" height="900">
+              <img class="inline-shot" src="shots/tv-play-ui.jpg" alt="Kino's player with a red progress bar, skip buttons, subtitles and settings" loading="lazy" width="1600" height="900">
               <span class="d">Subtitles, audio tracks and resume, in Kino's player or in VLC, mpv or Just Player.</span>
             </button>
           </li>

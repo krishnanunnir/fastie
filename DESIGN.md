@@ -11,7 +11,7 @@ colors:
   outline-variant: "#3A3A42"
   secondary-container: "#FFFFFF2E"
   inverse: "#F2F2F4"
-  amber: "#FFB627"
+  accent: "#FF4D3D"
 typography:
   display:
     fontFamily: "sans-serif (Roboto, platform default)"
@@ -81,13 +81,13 @@ components:
     outline: "2dp white ring, 4dp outside the art"
   continue-card:
     rounded: "{rounded.card}"
-    progress: "4dp, white 30% track, amber fill"
+    progress: "4dp, white 30% track, red fill"
   tab-tv:
     textColor: "white at 62%"
     typography: "16sp Roboto Medium"
   tab-tv-current:
     textColor: "{colors.text}"
-    underline: "2dp {colors.amber}"
+    underline: "2dp {colors.accent}"
   tab-tv-focused:
     backgroundColor: "{colors.text}"
     textColor: "{colors.ground}"
@@ -112,7 +112,7 @@ The system is built from platform Views plus Material Components (added 2026-11-
 **Key characteristics:**
 - True-black ground (#08080A) with flat tonal containers. Depth comes from scrims, not shadows (the phone hero card's elevation is the one exception).
 - White is the cursor: focused controls invert to white with ground ink, and focused imagery gets a 2dp white ring with a 4dp gap.
-- One accent, amber, for progress, the wordmark and the current page.
+- One accent, ember red, for progress, the logo and the current page.
 - TV navigation is a row of text tabs along the top. There is no rail, so the rows get the full width.
 
 ## Colors
@@ -122,9 +122,9 @@ The system is built from platform Views plus Material Components (added 2026-11-
 - **White** (#FFFFFF): primary type and the focus colour. The code's `C.primary`, `C.primaryContainer` and `C.onSurface` all resolve to it.
 - **Variant** (#A3A3AB): secondary text and inactive phone nav. Meta over art uses white at 72%, the TV synopsis white at 82%, and inactive TV tabs white at 62%.
 - **White 18%** (`C.secondaryContainer`): resting buttons and selected chips. It works over both art and ground.
-- **Amber** (#FFB627): `C.amber`. See the rule below.
+- **Accent** (#FF4D3D, ember red): `C.accent`. See the rule below.
 
-**The Amber Budget Rule.** Amber marks progress (cards, episode thumbnails, the player scrubber), the logo (the k and "kino"), and the current page (the TV tab's underline, the phone bar's icon and label). Nothing else, including focus, buttons, ratings and headings.
+**The Accent Budget Rule.** The accent marks progress (cards, episode thumbnails, the player scrubber), the logo (the k and "kino"), and the current page (the TV tab's underline, the phone bar's icon and label). Nothing else, including focus, buttons, ratings and headings.
 
 **The White Means Focus Rule.** On TV, a solid white surface means focus. The phone's single primary action (Play) is the only exception.
 
@@ -165,7 +165,7 @@ There are three motions:
 - **Poster card:** 8dp corners, art clipped to its outline, and the title as fallback text while art loads. On TV, a 4dp padding around the art holds the focus ring.
 - **Continue Watching card:** a 16:9 backdrop still under a black scrim. It shows the name (Label), "S1 · E4 · 31 min left" (Meta at 75% white), and a 4dp progress line (4% minimum fill). Selecting it goes straight to streams.
 - **Buttons:** 6dp corners, 48dp minimum height. They rest on white at 18% (Play on the phone rests white) and invert to white when focused or pressed.
-- **Tabs (TV):** text at 62% white, white with an amber underline on the current page, and a white pill with ground ink when focused. Only the current page's tab can take focus from outside the bar, so pressing ↑ lands on it.
+- **Tabs (TV):** text at 62% white, white with a red underline on the current page, and a white pill with ground ink when focused. Only the current page's tab can take focus from outside the bar, so pressing ↑ lands on it.
 
 ## Other pages
 
@@ -173,13 +173,13 @@ All pages use the same system. Corners come from `Shape` (6dp for buttons, rows,
 
 - **Details:** the same hero as Home (a full-screen backdrop on TV, the logo sized to its own aspect, the ★ meta line, a 3-line synopsis), then Play and My List, then the season chips.
   - Season chips are pills: a hairline outline at rest, white 18% when selected, white when focused.
-  - Episode rows show a 16:9 thumbnail (8dp corners) with a 3dp amber progress line. Under focus they get a raised fill and a 2dp white ring, and the text stays white.
+  - Episode rows show a 16:9 thumbnail (8dp corners) with a 3dp red progress line. Under focus they get a raised fill and a 2dp white ring, and the text stays white.
 - **Streams:** there is no stream page. Details lists the streams for Play's target under the buttons, best for the device first, five at a time with "Show all", in list rows that invert to white under focus. Episodes and Continue Watching play the best stream directly; the player finds it behind the poster.
 - **Settings:** section titles over list rows, in a column capped at 640dp.
 - **Search:** a pill field that gets a 2dp white stroke under focus; before typing, recent searches and what's popular on Home; results in one poster grid with All / Movies / Series filters, and pulsing poster placeholders while addons answer.
 - **My List:** a grid of posters that scale to 1.06 under focus.
 - **Sign-in:** the device code sits in a container box with a hairline outline, not a white box (white means focus). Inputs match the search field.
-- **Player:** the scrubber and played bar are amber, because they show progress.
+- **Player:** the scrubber and played bar are red, because they show progress.
 
 ## Known gaps
 
@@ -193,7 +193,7 @@ All pages use the same system. Corners come from `Shape` (6dp for buttons, rows,
 - Give every type size a TV twin.
 
 **Don't:**
-- Use amber for anything outside its budget.
+- Use the accent for anything outside its budget.
 - Add borders to cards at rest, or shadows for depth.
 - Bring back a rail on TV or a focus-following hero on phone.
 - Add Compose, Palette or a downloaded font.
