@@ -365,7 +365,7 @@ fun Context.streamCard(s: Stream, best: Boolean, onClick: () -> Unit): View = Li
                 append("Best for this ${if (isTv) "TV" else "phone"}", android.text.style.ForegroundColorSpan(C.onSurface), 0)
                 append("  ·  ")
             }
-            append(listOfNotNull(Debrid.connected(context)?.service?.label?.takeIf { s.hash != null }, s.addon).joinToString("  ·  "))
+            append(listOfNotNull(Debrid.connected(context)?.label?.takeIf { s.hash != null }, s.addon).joinToString("  ·  "))
         }
     }, lp().apply { topMargin = dp(10) })
     s.fileName?.let { addView(text(T.META, C.alpha(C.variant, 0.7f), lines = 1, s = it).apply {

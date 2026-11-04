@@ -281,6 +281,9 @@ class LibraryPage(private val a: MainActivity) {
 class SettingsPage(private val a: MainActivity) {
     val view = ScrollView(a).apply { isFillViewport = true }
     private val col = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+    // Each debrid service's plan and expiry, asked for once per visit (declared before init, which draws the page).
+    private val plans = mutableMapOf<Debrid, String>()
+    private val asked = mutableSetOf<Debrid>()
 
     init {
         val s = a.side()
@@ -339,13 +342,16 @@ class SettingsPage(private val a: MainActivity) {
             }
             groupRow("Use another player app", if (external) "Streams open in VLC, mpv or any video app" else "Plays in Kino, with subtitles, audio tracks and resume",
                 trailing = toggle) { Store.setExternalPlayer(a, !external); refresh() }
-            val debrid = Debrid.connected(a)
-            if (debrid != null) groupRow(debrid.service.label, debridPlan ?: "Cached torrents from your addons play through it",
-                leading = a.initial(debrid.service.label), trailing = a.pill("Connected", solid = true)) { chooseDebrid() }
-            else groupRow("Debrid service", "Connect TorBox, Real-Debrid and others so torrents can play",
-                leading = a.initial("D"), trailing = a.chevron()) { chooseDebrid() }
-            // The plan and expiry come from the service, once per visit to Settings.
-            if (debrid != null && !askedPlan) { askedPlan = true; a.load({ debrid.service.plan(debrid.key) }) { r -> r.getOrNull()?.let { debridPlan = it; refresh() } } }
+            val debrid = Debrid.connected(a)?.accounts.orEmpty()
+            debrid.forEach { (service, key) ->
+                groupRow(service.label, plans[service] ?: "Cached torrents from your addons play through it",
+                    leading = a.initial(service.label), trailing = a.pill("Connected", solid = true)) { debridKey(service) }
+                // The plan and expiry come from the service, once per visit to Settings.
+                if (asked.add(service)) a.load({ service.plan(key) }) { r -> r.getOrNull()?.let { plans[service] = it; refresh() } }
+            }
+            if (debrid.size < Debrid.entries.size) groupRow(if (debrid.isEmpty()) "Debrid service" else "Add a debrid service",
+                if (debrid.isEmpty()) "Connect TorBox, Real-Debrid and others so torrents can play" else "Torrents play through whichever has them",
+                leading = a.initial(if (debrid.isEmpty()) "D" else "+"), trailing = a.chevron()) { chooseDebrid() }
         })
 
         // About, quietly at the end.
@@ -367,8 +373,6 @@ class SettingsPage(private val a: MainActivity) {
         }
     }
 
-    private var debridPlan: String? = null
-    private var askedPlan = false
 
     /** What an addon provides, as pills: Catalogs, Streams, Subtitles (or Details when it's none of those). */
     private fun rolePills(addon: Addon) = com.google.android.material.chip.ChipGroup(a).apply {
@@ -470,14 +474,14 @@ class SettingsPage(private val a: MainActivity) {
         sheet.dialog.show()
     }
 
-    /** The debrid services to pick from, one of which gets connected (or switched to, or removed). */
+    /** The debrid services to connect; any number can be, and they're tried in this order. */
     private fun chooseDebrid() {
-        val now = Debrid.connected(a)?.service
-        val sheet = a.sheet("Debrid service", if (now == null) "Pick the one you have an account with" else "One is connected at a time; picking another replaces ${now.label}")
+        val now = Debrid.connected(a)?.accounts.orEmpty().map { it.service }
+        val sheet = a.sheet("Debrid service", "Connect any you have an account with. Kino tries them in this order.")
         val pad = a.dp(if (a.isTv) 32 else 20)
         sheet.body.addView(a.group().apply {
             Debrid.entries.forEach { s ->
-                groupRow(s.label, "Your API key is at ${s.keyAt}", leading = a.initial(s.label), trailing = if (s == now) a.pill("Connected", solid = true) else a.chevron()) { sheet.dialog.dismiss(); debridKey(s) }
+                groupRow(s.label, "Your API key is at ${s.keyAt}", leading = a.initial(s.label), trailing = if (s in now) a.pill("Connected", solid = true) else a.chevron()) { sheet.dialog.dismiss(); debridKey(s) }
             }
         }, lp().apply { setMargins(pad, 0, pad, 0) })
         sheet.dialog.show()
@@ -486,7 +490,7 @@ class SettingsPage(private val a: MainActivity) {
     /** Asks for [service]'s API key in a sheet, checks it with the service, and keeps it on this device. */
     private fun debridKey(service: Debrid) {
         val name = service.label
-        val connected = Debrid.connected(a)?.service == service
+        val connected = Debrid.connected(a)?.accounts.orEmpty().any { it.service == service }
         val sheet = a.sheet(name, "Find your API key at ${service.keyAt}. It stays on this device.")
         val pad = a.dp(if (a.isTv) 32 else 20)
         val box = a.textField(if (connected) "Paste a new API key" else "$name API key").apply {
@@ -501,7 +505,7 @@ class SettingsPage(private val a: MainActivity) {
             addView(box)
             addView(LinearLayout(a).apply {
                 if (connected) addView(a.button("Remove key") {
-                    Debrid.connect(a, service, null); debridPlan = null; askedPlan = false; sheet.dialog.dismiss(); a.say("$name removed"); refresh()
+                    Debrid.connect(a, service, null); plans.remove(service); asked.remove(service); sheet.dialog.dismiss(); a.say("$name removed"); refresh()
                 }, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = a.dp(10) })
                 addView(a.button("Save", primary = true) {
                     val key = box.editText!!.text.toString().trim()
@@ -509,7 +513,7 @@ class SettingsPage(private val a: MainActivity) {
                     sheet.dialog.dismiss()
                     a.say("Checking your $name key…")
                     a.load({ service.plan(key) }) { r ->
-                        r.onSuccess { Debrid.connect(a, service, key); debridPlan = it; askedPlan = true; a.say("$name connected"); refresh() }
+                        r.onSuccess { Debrid.connect(a, service, key); it?.let { p -> plans[service] = p }; asked.add(service); a.say("$name connected"); refresh() }
                             // A 401 or an error in the reply's own envelope is the key; anything else is the network.
                             .onFailure { a.say(if (it is HttpException && it.code in 401..403 || it is IllegalStateException) "$name didn't accept that key." else "Couldn't reach $name. Try again.") }
                     }

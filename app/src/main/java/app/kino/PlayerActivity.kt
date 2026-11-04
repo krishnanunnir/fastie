@@ -112,13 +112,13 @@ class PlayerActivity : Activity() {
         subtitlesAhead = Net.fan.submit(java.util.concurrent.Callable { Addons.subtitles(this, type, videoId) })
         when {
             url != null -> start(url, subs)
-            hash != null && debrid != null -> prepare("Getting the video from ${debrid.service.label}…", {
+            hash != null && debrid != null -> prepare("Getting the video from ${debrid.label}…", {
                 debrid.resolve(hash, intent.getStringExtra("filename"), intent.getIntExtra("fileIdx", -1).takeIf { it >= 0 }) to subs
             })
             else -> prepare("Finding the best stream…", {
                 val found = findStreams(this, type, videoId, season != null)
                 val best = found.streams.firstOrNull() ?: error(found.emptyMessage())
-                waiting = if (best.hash != null) "Getting the video from ${debrid!!.service.label}…" else "Connecting…"
+                waiting = if (best.hash != null) "Getting the video from ${debrid!!.label}…" else "Connecting…"
                 (best.url ?: debrid!!.resolve(best.hash!!, best.filename, best.fileIdx)) to subsJson(best)
             })
         }

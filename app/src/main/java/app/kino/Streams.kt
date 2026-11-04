@@ -25,7 +25,7 @@ class Found(val streams: List<Stream>, val torrents: Int, val debrid: String?) {
 
 /**
  * Every stream your addons have for [videoId] that can play now, best for this device first. Torrents only play through
- * debrid, so just the ones the connected service already has are kept (all of them when it can't say). Network; call off the main thread.
+ * debrid, so just the ones a connected service already has are kept (all of them when it can't say). Network; call off the main thread.
  */
 fun findStreams(ctx: Context, type: String, videoId: String, episode: Boolean): Found {
     val all = Addons.streams(ctx, type, videoId)
@@ -35,7 +35,7 @@ fun findStreams(ctx: Context, type: String, videoId: String, episode: Boolean): 
     val playable = all.filter { it.url != null || (debrid != null && (cached == null || it.hash in cached)) }
     // Phones get 1080p at a bitrate Wi-Fi or mobile data keeps up with; TVs get 4K short of remux bitrates.
     val ranked = rankStreams(playable, if (ctx.isTv) 2160 else 1080, if (ctx.isTv) 40.0 else 20.0, if (episode) 50 else 120)
-    return Found(ranked, torrents.distinctBy { it.hash }.size, debrid?.service?.label)
+    return Found(ranked, torrents.distinctBy { it.hash }.size, debrid?.names)
 }
 
 fun subsJson(s: Stream) = JSONArray().apply { s.subtitles.forEach { (lang, url) -> put(JSONObject().put("lang", lang).put("url", url)) } }.toString()
@@ -50,11 +50,11 @@ fun Activity.playStream(item: Item, s: Stream, link: String?, type: String, id: 
     if (!Store.externalPlayer(this)) return startActivity(playerIntent(item, subsJson(s), type, id, season, episode)
         .putExtra("hash", s.hash).putExtra("filename", s.filename).putExtra("fileIdx", s.fileIdx ?: -1))
     val root = findViewById<View>(android.R.id.content)
-    val wait = Snackbar.make(root, "Getting the video from ${debrid.service.label}…", Snackbar.LENGTH_INDEFINITE).apply { show() }
+    val wait = Snackbar.make(root, "Getting the video from ${debrid.label}…", Snackbar.LENGTH_INDEFINITE).apply { show() }
     load({ debrid.resolve(s.hash!!, s.filename, s.fileIdx) }) { r ->
         wait.dismiss()
         r.onSuccess { playLink(item, it, subsJson(s), type, id, season, episode) }
-            .onFailure { Snackbar.make(root, it.message ?: "${debrid.service.label} couldn't play this one. Try another stream.", 5000).show() }
+            .onFailure { Snackbar.make(root, it.message ?: "${debrid.label} couldn't play this one. Try another stream.", 5000).show() }
     }
 }
 

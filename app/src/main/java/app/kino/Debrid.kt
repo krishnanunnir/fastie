@@ -15,8 +15,8 @@ private const val PM = "https://www.premiumize.me/api"
 private const val DL = "https://debrid-link.com/api/v2"
 
 /**
- * The debrid services that turn the torrents your addons find into direct video links. One is connected at a time, and
- * its API key is kept on this device only. Everything here does network work; call it off the main thread.
+ * The debrid services that turn the torrents your addons find into direct video links. Any number can be connected, and
+ * their API keys are kept on this device only. Everything here does network work; call it off the main thread.
  */
 enum class Debrid(val label: String, val keyAt: String) {
     TORBOX("TorBox", "torbox.app/settings"),
@@ -25,10 +25,33 @@ enum class Debrid(val label: String, val keyAt: String) {
     PREMIUMIZE("Premiumize", "premiumize.me/account"),
     DEBRID_LINK("Debrid-Link", "debrid-link.com/webapp/apikey");
 
-    /** The connected service and its key. */
-    class Account(val service: Debrid, val key: String) {
-        fun cached(hashes: List<String>) = service.cached(key, hashes)
-        fun resolve(hash: String, filename: String?, fileIdx: Int?) = service.resolve(key, hash, filename, fileIdx)
+    /** A connected service and its key. */
+    data class Account(val service: Debrid, val key: String)
+
+    /** Every connected service, in the order they're tried: this enum's. */
+    class Connected(val accounts: List<Account>) {
+        /** The one service's name, for stream cards and "Getting the video from …". */
+        val label = accounts.singleOrNull()?.service?.label ?: "Debrid"
+        /** "TorBox or Premiumize", for saying where nothing was found. */
+        val names = accounts.joinToString(" or ") { it.service.label }
+
+        /** Torrents any of them has; null when one of them can't say, and then all of them are worth trying. */
+        fun cached(hashes: List<String>): Set<String>? =
+            accounts.map { it.service.cached(it.key, hashes) ?: return null }.flatten().toSet()
+
+        /**
+         * The link from the first service that has [hash] ready. Services that can check their cache are asked first,
+         * so one that doesn't have it is skipped instead of being sent to fetch it.
+         */
+        fun resolve(hash: String, filename: String?, fileIdx: Int?): String {
+            accounts.singleOrNull()?.let { return it.service.resolve(it.key, hash, filename, fileIdx) }
+            var failed: Throwable? = null
+            for (a in accounts) {
+                if (a.service.cached(a.key, listOf(hash))?.contains(hash.lowercase()) == false) continue
+                runCatching { return a.service.resolve(a.key, hash, filename, fileIdx) }.onFailure { failed = it }
+            }
+            throw failed ?: IllegalStateException("None of your debrid services has this one ready. Try another stream.")
+        }
     }
 
     /** "Pro  ·  until 12 Dec 2026": the account's plan and when it runs out. Throws if the service doesn't accept [key]. */
@@ -146,12 +169,12 @@ enum class Debrid(val label: String, val keyAt: String) {
         // TorBox's key keeps the "torbox" slot it always had.
         private val Debrid.slot get() = name.lowercase()
 
-        /** The connected service, if any. */
-        fun connected(ctx: Context): Account? = entries.firstNotNullOfOrNull { s -> prefs(ctx).getString(s.slot, null)?.let { Account(s, it) } }
+        /** The connected services, or null when there are none. */
+        fun connected(ctx: Context): Connected? =
+            entries.mapNotNull { s -> prefs(ctx).getString(s.slot, null)?.let { Account(s, it) } }.ifEmpty { null }?.let(::Connected)
 
-        /** Connects [service] with [key], replacing whichever was connected; a null key disconnects. */
-        fun connect(ctx: Context, service: Debrid, key: String?) = prefs(ctx).edit()
-            .apply { entries.forEach { remove(it.slot) } }.putString(service.slot, key?.trim()?.ifBlank { null }).apply()
+        /** Connects [service] with [key] beside any others; a null key disconnects just that one. */
+        fun connect(ctx: Context, service: Debrid, key: String?) = prefs(ctx).edit().putString(service.slot, key?.trim()?.ifBlank { null }).apply()
 
         /** Files in TorBox's shape, which [pick] reads: an id, a name, a size and, where the service gives one, a link. */
         fun file(id: Int, name: String, size: Long, link: String? = null): JSONObject =
